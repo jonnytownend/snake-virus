@@ -5,6 +5,7 @@ import {
   HAZARD_SEQUENCE,
   KEYWORDS,
   SPEED,
+  STAGES,
   TARGET_SEQUENCE,
   TARGETS,
   UI_TEXT
@@ -36,6 +37,7 @@ export class GameEngine {
     this.sourceProvider = asSourceProvider(sourceProvider, sourceText);
 
     this.currentSourceText = sourceText;
+    this.currentSourcePath = "unknown.js";
     this.codeGrid = [];
     this.styleGrid = [];
     this.boardSize = { ...GRID };
@@ -99,6 +101,7 @@ export class GameEngine {
       width: this.boardSize.width,
       height: this.boardSize.height
     });
+    this.currentSourcePath = this.extractSourcePath(this.currentSourceText);
 
     this.codeGrid = buildCodeGrid(
       this.currentSourceText,
@@ -137,6 +140,7 @@ export class GameEngine {
   syncHud() {
     this.renderer.updateStatus({
       score: this.state.score,
+      stage: this.state.stage,
       targetChar: this.currentTargetLabel(),
       avoidChars: this.currentAvoidLabel(),
       eaten: this.state.eatenCount,
@@ -194,8 +198,9 @@ export class GameEngine {
 
     this.state.snake.unshift(next);
 
+    let leveledUp = false;
     if (this.state.activeTargets.has(nextKey)) {
-      this.eatTarget(nextKey);
+      leveledUp = this.eatTarget(nextKey);
     } else if (this.state.growth > 0) {
       this.state.growth -= 1;
     } else {
@@ -210,7 +215,7 @@ export class GameEngine {
 
     this.refreshHazards();
     this.syncHud();
-    this.renderer.setMessage(this.progressMessage());
+    if (!leveledUp) this.renderer.setMessage(this.progressMessage());
     this.updateLoopSpeed();
     this.render();
   }
@@ -241,13 +246,16 @@ export class GameEngine {
     this.renderer.triggerGlitch();
     this.audio.playEatSfx();
 
+    if (this.checkStageProgress()) return true;
+
     if (this.state.eatenThisTarget >= this.state.targetQuota) {
       this.pickNextTargets();
       this.refreshHazards(true);
-      return;
+      return false;
     }
 
     this.maybeRefreshTargets();
+    return false;
   }
 
   randomCorruptionChar() {
@@ -258,6 +266,34 @@ export class GameEngine {
   maybeRefreshTargets() {
     if (this.state.activeTargets.size > 0) return;
     this.pickNextTargets();
+  }
+
+  checkStageProgress() {
+    const nextStage = 1 + Math.floor(this.state.eatenCount / STAGES.corruptionsPerLevel);
+    if (nextStage <= this.state.stage) return false;
+
+    while (this.state.stage < nextStage && !this.state.gameOver) {
+      this.state.stage += 1;
+      this.advanceStage();
+    }
+
+    return true;
+  }
+
+  advanceStage() {
+    this.rebuildBoard();
+    this.state.activeTargets.clear();
+    this.state.hazardCells.clear();
+    this.state.activeHazardChars = [];
+    this.state.eatenThisTarget = 0;
+
+    const hasTargets = this.pickNextTargets();
+    if (!hasTargets) return;
+
+    this.refreshHazards(true);
+    this.renderer.triggerGlitch();
+    this.audio.playStartSfx();
+    this.renderer.setMessage(`Stage ${this.state.stage} breach. Injecting ${this.currentSourcePath}.`);
   }
 
   pickNextTargets() {
@@ -398,6 +434,14 @@ export class GameEngine {
   progressMessage() {
     const target = this.currentTargetLabel();
     const avoid = this.currentAvoidLabel();
-    return `Corrupt [${target}] (${this.state.eatenThisTarget}/${this.state.targetQuota}). Avoid [${avoid}].`;
+    return `Stage ${this.state.stage} | Corrupt [${target}] (${this.state.eatenThisTarget}/${this.state.targetQuota}). Avoid [${avoid}].`;
+  }
+
+  extractSourcePath(text) {
+    if (!text) return "unknown.js";
+    const firstLine = text.split("\n", 1)[0].trim();
+    if (!firstLine.startsWith("// source:")) return "unknown.js";
+    const path = firstLine.slice("// source:".length).trim();
+    return path || "unknown.js";
   }
 }

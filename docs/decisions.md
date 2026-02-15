@@ -71,3 +71,43 @@
 - Context: Eaten-cell corruption and progression hazards used different color treatments, causing visual ambiguity.
 - Decision: Apply one shared red-highlight style to all dangerous corruption cells regardless of origin.
 - Consequence: Players can instantly read any corruption-marked cell as the same class of threat.
+
+### Decision: Rebrand experience as Snake Virus
+- Context: The product identity shifted from generic code-corruption theme to a clearer game title.
+- Decision: Rename UI/title copy and virtual file references to `Snake Virus` / `snake-virus.ts`.
+- Consequence: The game now has consistent naming across HUD, browser title, and faux IDE frame.
+
+### Decision: Add score-driven stage transitions that reload source slices
+- Context: Single-map runs became visually repetitive despite dynamic targets and hazards.
+- Decision: Introduce level thresholds by score; on each stage-up, load a new source slice and repopulate targets/hazards while preserving run momentum.
+- Consequence: Long sessions traverse more of the corpus and maintain variety without resetting score/speed progression.
+
+### Decision: Add launch briefing overlay with narrative onboarding
+- Context: New players needed clearer framing of rules and the meta "real source code" premise.
+- Decision: Gate initial start behind a styled intro overlay with mission/story copy and explicit controls.
+- Consequence: First interaction has stronger theme, clearer rules, and immediate awareness of the meta source-code mechanic.
+
+### Decision: Expand target character pool with alphabetic symbols
+- Context: Punctuation-only targets limited visible code mutation patterns.
+- Decision: Extend the target sequence to include high-frequency lowercase letters.
+- Consequence: Corruption visibly scrambles words/tokens in addition to punctuation, improving readability of mutation effects.
+
+### Decision: Increase corruption glitch intensity on successful eats
+- Context: Previous glitch signal was subtle and under-communicated escalating system instability.
+- Decision: Add a stronger glitch mode with amplified jitter/hue/frame distortion for corruption events.
+- Consequence: Each successful corruption now produces a clearer sense of system degradation and tension.
+
+### Decision: Drive stage progression by corruption count instead of score
+- Context: Score-scaled stage-ups occurred too quickly, reducing time spent visibly corrupting a single source slice.
+- Decision: Switch stage thresholds to total corrupted target characters (`eatenCount`) with a larger per-stage quota.
+- Consequence: Players stay on each file longer, making local corruption patterns more readable before transitioning.
+
+### Decision: Set stage cadence to every 10 corruptions and persist corruption across swaps
+- Context: Previous corruption-based cadence kept players on one file too long, and stage transitions reset visible corruption.
+- Decision: Trigger stage transitions every 10 corrupted targets and retain `eaten`/`corruptedChars` state when loading the next file slice.
+- Consequence: File changes happen at a brisker pace while corruption continuously accumulates on-screen, increasing sustained difficulty.
+
+### Decision: Revert glitch effect to subtle jitter baseline
+- Context: Amplified multi-layer glitch effects felt visually excessive during normal play.
+- Decision: Remove the strong glitch mode and return to the earlier short jitter-only animation.
+- Consequence: Corruption feedback remains readable without dominating the visual experience.

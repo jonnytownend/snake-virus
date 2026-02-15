@@ -1,4 +1,4 @@
-# Code Virus Architecture
+# Snake Virus Architecture
 
 ## Overview
 The app is intentionally split into small, single-purpose modules so game rules, rendering, audio, and input are isolated and easier to maintain.
@@ -7,6 +7,7 @@ Architecture and tradeoff decisions are recorded in `docs/decisions.md`.
 
 ## File Map
 - `index.html`: semantic shell only, no inline CSS or gameplay logic.
+  Includes the launch/briefing overlay shown before first start.
 - `src/styles/main.css`: all presentation styles.
 - `src/main.js`: composition root that wires dependencies and bootstraps the app.
 - `scripts/generate-source-corpus.mjs`: builds runtime source corpus from repository files.
@@ -21,7 +22,7 @@ Architecture and tradeoff decisions are recorded in `docs/decisions.md`.
 - `renderer.js`: DOM rendering + HUD updates + glitch visual effect.
 - `audio-engine.js`: Web Audio lifecycle, SFX, and music loop.
 - `input-controller.js`: keyboard mapping and event binding.
-- `game-engine.js`: core game loop, collision rules, scoring, growth, target rotation, and orchestration.
+- `game-engine.js`: core game loop, collision rules, scoring, stage transitions, growth, target rotation, and orchestration.
 
 ## Boundaries
 - `game-engine.js` owns game state and timing.

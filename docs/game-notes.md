@@ -1,13 +1,18 @@
-# Code Virus Game Notes
+# Snake Virus Game Notes
 
 ## Current Controls
 - `Arrow keys` or `W/A/S/D`: move virus.
 - `Space` or `Enter`: start/restart run.
 - `M`: toggle audio (SFX + background track).
 
+## Launch Flow
+- A mission-style intro overlay is shown on first load.
+- Press `Space`/`Enter` or click the CTA button to dismiss and start.
+- The intro explicitly calls out that the rendered code is the real game source.
+
 ## Rendering Rules
 - The game board is sourced from real repository JavaScript files via `src/game/source-corpus.js`.
-- A different source slice is selected each run/reset.
+- A different source slice is selected each run/reset and at every stage transition.
 - The virtual IDE window is centered in the browser page with surrounding spacing.
 - Editor typography keeps standard code-like spacing (non-square glyph geometry).
 - Corrupted characters are replaced with persistent random corruption glyphs.
@@ -28,7 +33,14 @@
 ## Targeting Rules
 - Multiple target character classes are active at the same time.
 - As progression increases, more target classes and more active target cells are spawned.
+- Target pool includes punctuation and alphabetic characters so readable code words can be actively corrupted.
 - A target cycle completes after a quota of successful corruptions, then a new target set is selected.
+
+## Stage Rules
+- Stage increases every `10` newly corrupted target characters.
+- On stage-up, the code map is swapped to a new source region while run score/speed continue.
+- Existing corrupted symbols remain in place across file swaps and embed into the new source slice.
+- Stage HUD tracks long-run progression through the corpus.
 
 ## Hazard Rules
 - Hazard characters unlock after an early progression threshold.

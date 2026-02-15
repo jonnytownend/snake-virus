@@ -20,6 +20,7 @@ export function createInitialState(width, height) {
     queuedDirection: { ...START_DIRECTION },
     directionQueue: [],
     score: 0,
+    stage: 1,
     eatenCount: 0,
     currentTargetIndex: 0,
     activeTargetChars: [],

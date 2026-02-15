@@ -46,8 +46,9 @@ export class Renderer {
     };
   }
 
-  updateStatus({ score, targetChar, avoidChars, eaten, speed, audioEnabled }) {
+  updateStatus({ score, stage, targetChar, avoidChars, eaten, speed, audioEnabled }) {
     this.elements.score.textContent = String(score);
+    this.elements.stage.textContent = String(stage);
     this.elements.targetChar.textContent = targetChar;
     this.elements.avoidChars.textContent = avoidChars;
     this.elements.eaten.textContent = String(eaten);

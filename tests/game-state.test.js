@@ -6,6 +6,7 @@ describe("createInitialState", () => {
     const state = createInitialState(20, 10);
 
     expect(state.score).toBe(0);
+    expect(state.stage).toBe(1);
     expect(state.eatenCount).toBe(0);
     expect(state.speed).toBe(1);
     expect(state.running).toBe(false);

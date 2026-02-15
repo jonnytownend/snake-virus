@@ -1,4 +1,29 @@
-export const TARGET_SEQUENCE = ["{", "}", "(", ")", "[", "]", ";", "=", "<", ">"];
+export const TARGET_SEQUENCE = [
+  "{",
+  "}",
+  "(",
+  ")",
+  "[",
+  "]",
+  ";",
+  "=",
+  "<",
+  ">",
+  "a",
+  "e",
+  "i",
+  "o",
+  "u",
+  "s",
+  "r",
+  "t",
+  "n",
+  "l",
+  "c",
+  "d",
+  "m",
+  "f"
+];
 export const HAZARD_SEQUENCE = [
   ":",
   ".",
@@ -75,10 +100,14 @@ export const SPEED = Object.freeze({
   increasePerEat: 0.03
 });
 
+export const STAGES = Object.freeze({
+  corruptionsPerLevel: 10
+});
+
 export const START_DIRECTION = Object.freeze({ x: 1, y: 0 });
 
 export const UI_TEXT = Object.freeze({
-  ready: "Press Space to deploy virus.",
+  ready: "Press Space to unleash Snake Virus.",
   fullCorruption: "System fully corrupted. Press Space to replay.",
   fullCorruptionReset: "System fully corrupted. Press Space to run again.",
   crash: "Virus crashed. Press Space to re-run.",

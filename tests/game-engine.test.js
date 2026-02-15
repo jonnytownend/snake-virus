@@ -1,5 +1,5 @@
 import { jest } from "@jest/globals";
-import { HAZARDS, UI_TEXT } from "../src/game/constants.js";
+import { HAZARDS, STAGES, UI_TEXT } from "../src/game/constants.js";
 import { GameEngine } from "../src/game/game-engine.js";
 import { cellKey } from "../src/game/grid.js";
 
@@ -72,6 +72,7 @@ describe("GameEngine", () => {
     expect(renderer.renderBoard).toHaveBeenCalled();
 
     const lastHud = renderer.updateStatus.mock.calls.at(-1)[0];
+    expect(lastHud.stage).toBe(1);
     expect(lastHud.targetChar.length).toBeGreaterThan(0);
     expect(lastHud.targetChar).toContain("{");
   });
@@ -107,7 +108,7 @@ describe("GameEngine", () => {
     expect(audio.setGameSpeed).toHaveBeenCalledWith(engine.state.speed);
     expect(audio.playStartSfx).toHaveBeenCalledTimes(1);
     expect(jest.getTimerCount()).toBeGreaterThan(0);
-    expect(renderer.setMessage.mock.calls.at(-1)[0]).toMatch(/^Corrupt/);
+    expect(renderer.setMessage.mock.calls.at(-1)[0]).toMatch(/^Stage 1 \| Corrupt/);
   });
 
   test("stopLoop clears the active loop interval", () => {
@@ -208,6 +209,39 @@ describe("GameEngine", () => {
     expect(audio.setGameSpeed).toHaveBeenCalledWith(engine.state.speed);
     expect(renderer.triggerGlitch).toHaveBeenCalledTimes(1);
     expect(audio.playEatSfx).toHaveBeenCalledTimes(1);
+  });
+
+  test("corruption threshold level-up advances stage and swaps code source", () => {
+    const sourceProvider = {
+      nextSource: jest.fn()
+        .mockReturnValueOnce(
+          "// source: alpha.js\n// region: 1-8\n{ } ( ) [ ] ; = < > a e i o u s r t n l c d m f"
+        )
+        .mockReturnValueOnce(
+          "// source: beta.js\n// region: 1-8\nfunction beta(){return safe_token + glitch_mask;}"
+        )
+    };
+    const { engine } = createEngine({
+      measuredBoardSize: { width: 24, height: 12 },
+      sourceProvider
+    });
+    engine.reset();
+
+    engine.state.running = true;
+    engine.state.direction = { x: 1, y: 0 };
+    engine.state.directionQueue = [];
+    engine.state.snake = [{ x: 1, y: 1 }, { x: 0, y: 1 }];
+    engine.state.activeTargets = new Set([cellKey(2, 1)]);
+    engine.state.eatenCount = STAGES.corruptionsPerLevel - 1;
+
+    engine.tick();
+
+    expect(engine.state.stage).toBe(2);
+    expect(sourceProvider.nextSource).toHaveBeenCalledTimes(2);
+    expect(engine.currentSourcePath).toBe("beta.js");
+    expect(engine.state.activeTargets.size).toBeGreaterThan(0);
+    expect(engine.state.eaten.has(cellKey(2, 1))).toBe(true);
+    expect(engine.state.corruptedChars.has(cellKey(2, 1))).toBe(true);
   });
 
   test("tick decrements growth on empty movement and keeps tail length", () => {

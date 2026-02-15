@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Code Virus: Snake</title>
+    <title>Snake Virus</title>
     <link rel="stylesheet" href="./src/styles/main.css" />
   </head>
   <body>
@@ -14,15 +14,19 @@
           <span class="light y"></span>
           <span class="light g"></span>
         </div>
-        <span>code-virus.ts</span>
+        <span>snake-virus.ts</span>
       </div>
       <div class="workspace">
         <aside class="hud">
-          <h1>Code Virus</h1>
+          <h1>Snake Virus</h1>
           <div class="status">
             <div class="item">
               <div class="k">Score</div>
               <div class="v" id="score">0</div>
+            </div>
+            <div class="item">
+              <div class="k">Stage</div>
+              <div class="v" id="stage">1</div>
             </div>
             <div class="item">
               <div class="k">Targets</div>
@@ -48,22 +52,45 @@
           <div class="help">
             Arrow keys / WASD to steer.<br />
             Eat highlighted target characters.<br />
-            Avoid red protected characters.<br />
+            Avoid all red corruption characters.<br />
             Avoid your own virus tail and editor bounds.<br />
             Press M to toggle audio.
           </div>
           <div class="cta" id="message">
-            Press Space to deploy virus.
+            Press Space to unleash Snake Virus.
           </div>
         </aside>
         <section class="editor-wrap">
           <div class="editor-head">
             <span>main</span>
-            <span>virus-engine.ts</span>
+            <span>snake-virus.ts</span>
             <span>UTF-8</span>
           </div>
           <pre id="editor"></pre>
         </section>
+      </div>
+    </div>
+    <div class="intro-overlay" id="introOverlay">
+      <div class="intro-modal">
+        <p class="intro-tag">SNAKE VIRUS // CONTAINMENT BREACH</p>
+        <h2>Unleash the Virus</h2>
+        <p>
+          You are deploying a self-propagating virus inside a live source file.
+          Every character you consume mutates the running codebase in real time.
+        </p>
+        <p>
+          The code you see is not fake. It is the real source of this game.
+          Corrupt enough targets to force stage shifts and jump to new source regions.
+        </p>
+        <ul>
+          <li>Steer with Arrow keys or WASD.</li>
+          <li>Consume yellow target characters.</li>
+          <li>Avoid all red corruption, your tail, and window edges.</li>
+          <li>Press M anytime to toggle audio.</li>
+        </ul>
+        <button class="intro-start" id="introStart" type="button">
+          Press Space or Click to Unleash
+        </button>
       </div>
     </div>
 

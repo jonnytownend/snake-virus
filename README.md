@@ -1,12 +1,15 @@
-# Code Virus
+# Snake Virus
 
-Code Virus is a browser game inspired by classic Snake.
+Snake Virus is a browser game inspired by classic Snake.
 Instead of eating food on an empty board, you control a virus that corrupts characters inside a live code block rendered in an IDE-style interface.
 
 ## Features
 - IDE-themed game board built from source code text.
-- Target-character gameplay loop (`{}`, `()`, `[]`, `;`, `=`, `<`, `>`).
+- Target-character gameplay loop across punctuation + alphabetic symbols.
 - Progressive difficulty (snake growth + speed scaling).
+- Corruption-count-based stage progression (every 10 corruptions) that swaps to new source regions mid-run.
+- Corruption symbols persist across stage/file swaps, so each run becomes progressively denser and harder.
+- Intro mission overlay that explains mechanics and the meta source-code concept.
 - Syntax-highlighted code rendering.
 - Visual glitch effects on corruption events.
 - Synthesized sound effects and background music via Web Audio API.

@@ -14,6 +14,7 @@ const elements = {
   app: requireElement("app"),
   editor: requireElement("editor"),
   score: requireElement("score"),
+  stage: requireElement("stage"),
   targetChar: requireElement("targetChar"),
   avoidChars: requireElement("avoidChars"),
   eaten: requireElement("eaten"),
@@ -26,11 +27,29 @@ const renderer = new Renderer(elements);
 const audio = new AudioEngine((enabled) => renderer.updateAudioStatus(enabled));
 const sourceProvider = new SourceTextProvider();
 const game = new GameEngine({ renderer, audio, sourceProvider });
+const introOverlay = requireElement("introOverlay");
+const introStart = requireElement("introStart");
+
+let introVisible = true;
+
+function dismissIntro() {
+  if (!introVisible) return;
+  introVisible = false;
+  introOverlay.classList.add("hidden");
+}
 
 const unbindInput = bindInput({
   onDirection: (x, y) => game.setDirection(x, y),
-  onStart: () => game.start(),
+  onStart: () => {
+    dismissIntro();
+    game.start();
+  },
   onToggleAudio: () => game.toggleAudio()
+});
+
+introStart.addEventListener("click", () => {
+  dismissIntro();
+  game.start();
 });
 
 game.reset();

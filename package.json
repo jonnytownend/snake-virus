@@ -1,7 +1,7 @@
 {
   "name": "snake-code",
   "version": "1.0.0",
-  "description": "Code Virus: a snake-inspired browser game where you corrupt source code in an IDE-style interface.",
+  "description": "Snake Virus: a snake-inspired browser game where you corrupt source code in an IDE-style interface.",
   "private": true,
   "license": "ISC",
   "author": "",
