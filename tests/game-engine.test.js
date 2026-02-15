@@ -8,13 +8,14 @@ function buildSource(lines = 30) {
   return Array.from({ length: lines }, () => row).join("\n");
 }
 
-function createRendererMock() {
+function createRendererMock({ measuredBoardSize = null } = {}) {
   return {
     updateStatus: jest.fn(),
     updateAudioStatus: jest.fn(),
     setMessage: jest.fn(),
     renderBoard: jest.fn(),
-    triggerGlitch: jest.fn()
+    triggerGlitch: jest.fn(),
+    measureBoardSize: jest.fn(() => measuredBoardSize)
   };
 }
 
@@ -23,6 +24,8 @@ function createAudioMock({ enabled = true } = {}) {
     isEnabled: jest.fn(() => enabled),
     ensureEnabledForGameplay: jest.fn(() => Promise.resolve()),
     toggle: jest.fn(() => Promise.resolve()),
+    setPlaybackActive: jest.fn(),
+    setGameSpeed: jest.fn(),
     dispose: jest.fn(),
     playStartSfx: jest.fn(),
     playEatSfx: jest.fn(),
@@ -31,7 +34,9 @@ function createAudioMock({ enabled = true } = {}) {
 }
 
 function createEngine(options = {}) {
-  const renderer = createRendererMock();
+  const renderer = createRendererMock({
+    measuredBoardSize: options.measuredBoardSize ?? null
+  });
   const audio = createAudioMock({ enabled: options.audioEnabled ?? true });
   const engine = new GameEngine({
     renderer,
@@ -69,6 +74,16 @@ describe("GameEngine", () => {
     expect(lastHud.targetChar).toBe("{");
   });
 
+  test("reset uses renderer-measured board size when available", () => {
+    const { engine } = createEngine({ measuredBoardSize: { width: 40, height: 18 } });
+
+    engine.reset();
+
+    expect(engine.boardSize).toEqual({ width: 40, height: 18 });
+    expect(engine.codeGrid.length).toBe(18);
+    expect(engine.codeGrid[0].length).toBe(40);
+  });
+
   test("start begins loop and triggers start SFX", () => {
     const { engine, audio, renderer } = createEngine();
     engine.reset();
@@ -76,9 +91,21 @@ describe("GameEngine", () => {
     engine.start();
 
     expect(engine.state.running).toBe(true);
+    expect(audio.setPlaybackActive).toHaveBeenCalledWith(true);
+    expect(audio.setGameSpeed).toHaveBeenCalledWith(engine.state.speed);
     expect(audio.playStartSfx).toHaveBeenCalledTimes(1);
     expect(jest.getTimerCount()).toBeGreaterThan(0);
     expect(renderer.setMessage.mock.calls.at(-1)[0]).toMatch(/^Corrupt/);
+  });
+
+  test("stopLoop clears the active loop interval", () => {
+    const { engine } = createEngine();
+    engine.reset();
+    engine.start();
+    expect(engine.interval).not.toBeNull();
+
+    engine.stopLoop();
+    expect(engine.interval).toBeNull();
   });
 
   test("start asks audio engine to enable when currently disabled", () => {
@@ -90,15 +117,19 @@ describe("GameEngine", () => {
     expect(audio.ensureEnabledForGameplay).toHaveBeenCalledTimes(1);
   });
 
-  test("setDirection prevents direct 180-degree reversal", () => {
+  test("setDirection queues rapid turns and blocks reversals", () => {
     const { engine } = createEngine();
     engine.reset();
 
     engine.setDirection(-1, 0);
-    expect(engine.state.queuedDirection).toEqual({ x: 1, y: 0 });
+    expect(engine.state.directionQueue).toEqual([]);
 
-    engine.setDirection(0, 1);
-    expect(engine.state.queuedDirection).toEqual({ x: 0, y: 1 });
+    engine.setDirection(0, -1);
+    engine.setDirection(-1, 0);
+    expect(engine.state.directionQueue).toEqual([{ x: 0, y: -1 }, { x: -1, y: 0 }]);
+
+    engine.setDirection(1, 0);
+    expect(engine.state.directionQueue).toEqual([{ x: 0, y: -1 }, { x: -1, y: 0 }]);
   });
 
   test("tick ends the game on wall collision", () => {
@@ -113,6 +144,7 @@ describe("GameEngine", () => {
     engine.tick();
 
     expect(engine.state.gameOver).toBe(true);
+    expect(audio.setPlaybackActive).toHaveBeenCalledWith(false);
     expect(audio.playCrashSfx).toHaveBeenCalledTimes(1);
     expect(renderer.setMessage).toHaveBeenCalledWith(UI_TEXT.crash);
   });
@@ -134,6 +166,7 @@ describe("GameEngine", () => {
     engine.tick();
 
     expect(engine.state.gameOver).toBe(true);
+    expect(audio.setPlaybackActive).toHaveBeenCalledWith(false);
     expect(audio.playCrashSfx).toHaveBeenCalledTimes(1);
   });
 
@@ -159,8 +192,63 @@ describe("GameEngine", () => {
     expect(engine.state.speed).toBeGreaterThan(1);
     expect(engine.state.snake.length).toBe(oldLength + 1);
 
+    expect(audio.setGameSpeed).toHaveBeenCalledWith(engine.state.speed);
     expect(renderer.triggerGlitch).toHaveBeenCalledTimes(1);
     expect(audio.playEatSfx).toHaveBeenCalledTimes(1);
+  });
+
+  test("tick decrements growth on empty movement and keeps tail length", () => {
+    const { engine } = createEngine();
+    engine.reset();
+
+    engine.state.running = true;
+    engine.state.direction = { x: 1, y: 0 };
+    engine.state.directionQueue = [];
+    engine.state.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }];
+    engine.state.activeTargets = new Set();
+    engine.state.growth = 1;
+
+    const beforeLength = engine.state.snake.length;
+    engine.tick();
+
+    expect(engine.state.growth).toBe(0);
+    expect(engine.state.snake.length).toBe(beforeLength + 1);
+  });
+
+  test("tick pops tail on empty movement when no growth remains", () => {
+    const { engine } = createEngine();
+    engine.reset();
+
+    engine.state.running = true;
+    engine.state.direction = { x: 1, y: 0 };
+    engine.state.directionQueue = [];
+    engine.state.snake = [{ x: 5, y: 5 }, { x: 4, y: 5 }, { x: 3, y: 5 }];
+    engine.state.activeTargets = new Set();
+    engine.state.growth = 0;
+
+    const beforeLength = engine.state.snake.length;
+    engine.tick();
+
+    expect(engine.state.snake.length).toBe(beforeLength);
+  });
+
+  test("consuming the final quota target rotates to the next target set", () => {
+    const { engine } = createEngine();
+    engine.reset();
+
+    engine.state.running = true;
+    engine.state.direction = { x: 1, y: 0 };
+    engine.state.directionQueue = [];
+    engine.state.snake = [{ x: 1, y: 1 }, { x: 0, y: 1 }];
+    engine.state.activeTargets = new Set([cellKey(2, 1)]);
+    engine.state.targetQuota = 1;
+    engine.state.eatenThisTarget = 0;
+    const previousTarget = engine.state.currentTargetIndex;
+
+    engine.tick();
+
+    expect(engine.state.currentTargetIndex).not.toBe(previousTarget);
+    expect(engine.state.eatenThisTarget).toBe(0);
   });
 
   test("pickNextTarget reports full corruption when no targets remain", () => {
@@ -175,6 +263,7 @@ describe("GameEngine", () => {
     expect(found).toBe(false);
     expect(engine.state.gameOver).toBe(true);
     expect(engine.state.won).toBe(true);
+    expect(engine.audio.setPlaybackActive).toHaveBeenCalledWith(false);
     expect(renderer.setMessage).toHaveBeenCalledWith(UI_TEXT.fullCorruptionReset);
   });
 

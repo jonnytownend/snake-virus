@@ -2,6 +2,8 @@ export class AudioEngine {
   constructor(onStatusChange = () => {}) {
     this.onStatusChange = onStatusChange;
     this.enabled = false;
+    this.playbackActive = false;
+    this.speedMultiplier = 1;
     this.audioCtx = null;
     this.musicTimer = null;
     this.musicStep = 0;
@@ -24,6 +26,20 @@ export class AudioEngine {
   async ensureEnabledForGameplay() {
     if (this.enabled) return;
     await this.enable(false);
+  }
+
+  setPlaybackActive(active) {
+    this.playbackActive = active;
+    if (this.playbackActive) {
+      this.startMusic();
+      return;
+    }
+    this.stopMusic();
+  }
+
+  setGameSpeed(multiplier) {
+    this.speedMultiplier = Math.max(1, Number(multiplier) || 1);
+    if (this.musicTimer) this.restartMusic();
   }
 
   playStartSfx() {
@@ -65,7 +81,7 @@ export class AudioEngine {
     }
 
     this.enabled = true;
-    this.startMusic();
+    if (this.playbackActive) this.startMusic();
 
     if (withToggleChime) this.playStartSfx();
     this.notifyStatus();
@@ -116,10 +132,11 @@ export class AudioEngine {
   }
 
   startMusic() {
-    if (!this.enabled || !this.audioCtx || this.musicTimer) return;
+    if (!this.enabled || !this.audioCtx || !this.playbackActive || this.musicTimer) return;
 
     const bass = [40, 40, 43, 45, 40, 40, 47, 45];
     const lead = [64, 67, 71, 69, 67, 64, 62, 59];
+    const beatMs = Math.max(100, Math.round(260 / this.speedMultiplier));
 
     this.musicStep = 0;
     this.musicTimer = setInterval(() => {
@@ -138,7 +155,7 @@ export class AudioEngine {
         when: 0.03
       });
       this.musicStep += 1;
-    }, 260);
+    }, beatMs);
   }
 
   stopMusic() {
@@ -146,5 +163,11 @@ export class AudioEngine {
 
     clearInterval(this.musicTimer);
     this.musicTimer = null;
+  }
+
+  restartMusic() {
+    if (!this.enabled || !this.playbackActive) return;
+    this.stopMusic();
+    this.startMusic();
   }
 }

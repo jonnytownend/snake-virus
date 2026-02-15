@@ -17,6 +17,7 @@ export function createInitialState(width, height) {
     snake: createInitialSnake(width, height),
     direction: { ...START_DIRECTION },
     queuedDirection: { ...START_DIRECTION },
+    directionQueue: [],
     score: 0,
     eatenCount: 0,
     currentTargetIndex: 0,

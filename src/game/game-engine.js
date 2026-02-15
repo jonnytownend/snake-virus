@@ -24,14 +24,17 @@ export class GameEngine {
 
     this.codeGrid = [];
     this.styleGrid = [];
-    this.state = createInitialState(GRID.width, GRID.height);
+    this.boardSize = { ...GRID };
+    this.state = createInitialState(this.boardSize.width, this.boardSize.height);
     this.interval = null;
   }
 
   reset() {
     this.stopLoop();
+    this.audio.setPlaybackActive(false);
+    this.boardSize = this.computeBoardSize();
     this.rebuildBoard();
-    this.state = createInitialState(GRID.width, GRID.height);
+    this.state = createInitialState(this.boardSize.width, this.boardSize.height);
 
     this.pickNextTarget();
     this.syncHud();
@@ -48,14 +51,23 @@ export class GameEngine {
     }
 
     this.state.running = true;
+    this.audio.setPlaybackActive(true);
+    this.audio.setGameSpeed(this.state.speed);
     this.audio.playStartSfx();
     this.renderer.setMessage(this.progressMessage());
     this.updateLoopSpeed();
   }
 
   setDirection(x, y) {
-    if (this.state.direction.x === -x && this.state.direction.y === -y) return;
-    this.state.queuedDirection = { x, y };
+    const tail = this.state.directionQueue.length > 0
+      ? this.state.directionQueue[this.state.directionQueue.length - 1]
+      : this.state.direction;
+
+    if (tail.x === -x && tail.y === -y) return;
+    if (tail.x === x && tail.y === y) return;
+
+    this.state.directionQueue.push({ x, y });
+    if (this.state.directionQueue.length > 2) this.state.directionQueue.shift();
   }
 
   toggleAudio() {
@@ -68,8 +80,26 @@ export class GameEngine {
   }
 
   rebuildBoard() {
-    this.codeGrid = buildCodeGrid(this.sourceText, GRID.width, GRID.height);
+    this.codeGrid = buildCodeGrid(
+      this.sourceText,
+      this.boardSize.width,
+      this.boardSize.height
+    );
     this.styleGrid = buildStyleGrid(this.codeGrid, KEYWORDS);
+  }
+
+  computeBoardSize() {
+    const measured = this.renderer.measureBoardSize?.();
+    if (
+      measured &&
+      Number.isInteger(measured.width) &&
+      Number.isInteger(measured.height) &&
+      measured.width > 0 &&
+      measured.height > 0
+    ) {
+      return measured;
+    }
+    return { ...GRID };
   }
 
   updateLoopSpeed() {
@@ -109,7 +139,8 @@ export class GameEngine {
   tick() {
     if (!this.state.running || this.state.gameOver) return;
 
-    this.state.direction = this.state.queuedDirection;
+    const queued = this.state.directionQueue.shift();
+    if (queued) this.state.direction = queued;
 
     const head = this.state.snake[0];
     const next = {
@@ -117,7 +148,7 @@ export class GameEngine {
       y: head.y + this.state.direction.y
     };
 
-    if (!inBounds(next.x, next.y, GRID.width, GRID.height)) {
+    if (!inBounds(next.x, next.y, this.boardSize.width, this.boardSize.height)) {
       this.endGame(false);
       return;
     }
@@ -169,6 +200,7 @@ export class GameEngine {
       SPEED.maxMultiplier,
       1 + this.state.eatenCount * SPEED.increasePerEat
     );
+    this.audio.setGameSpeed(this.state.speed);
 
     this.renderer.triggerGlitch();
     this.audio.playEatSfx();
@@ -212,6 +244,7 @@ export class GameEngine {
     this.state.running = false;
     this.state.gameOver = true;
     this.stopLoop();
+    this.audio.setPlaybackActive(false);
     this.renderer.setMessage(UI_TEXT.fullCorruptionReset);
     return false;
   }
@@ -221,6 +254,7 @@ export class GameEngine {
     this.state.gameOver = true;
     this.state.won = didWin;
     this.stopLoop();
+    this.audio.setPlaybackActive(false);
 
     if (!didWin) this.audio.playCrashSfx();
 

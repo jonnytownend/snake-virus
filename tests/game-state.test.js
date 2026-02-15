@@ -14,6 +14,7 @@ describe("createInitialState", () => {
 
     expect(state.direction).toEqual(START_DIRECTION);
     expect(state.queuedDirection).toEqual(START_DIRECTION);
+    expect(state.directionQueue).toEqual([]);
     expect(state.snake).toEqual([
       { x: 9, y: 5 },
       { x: 8, y: 5 },

@@ -13,6 +13,40 @@ export class Renderer {
     this.elements = elements;
   }
 
+  measureBoardSize() {
+    const editor = this.elements.editor;
+    if (!editor) return null;
+
+    const computed = getComputedStyle(editor);
+    const paddingX = Number.parseFloat(computed.paddingLeft) + Number.parseFloat(computed.paddingRight);
+    const paddingY = Number.parseFloat(computed.paddingTop) + Number.parseFloat(computed.paddingBottom);
+
+    const probe = document.createElement("span");
+    probe.className = "cell";
+    probe.style.position = "absolute";
+    probe.style.visibility = "hidden";
+    probe.style.pointerEvents = "none";
+    probe.textContent = "M";
+    editor.appendChild(probe);
+    const charRect = probe.getBoundingClientRect();
+    editor.removeChild(probe);
+
+    const charWidth = Math.max(1, Math.ceil(charRect.width));
+    const lineHeight = Math.max(
+      1,
+      Math.ceil(Number.parseFloat(computed.lineHeight) || charRect.height)
+    );
+
+    const gutterWidth = 42;
+    const usableWidth = Math.max(0, editor.clientWidth - paddingX - gutterWidth);
+    const usableHeight = Math.max(0, editor.clientHeight - paddingY);
+
+    return {
+      width: Math.max(24, Math.floor(usableWidth / charWidth)),
+      height: Math.max(12, Math.floor(usableHeight / lineHeight))
+    };
+  }
+
   updateStatus({ score, targetChar, eaten, speed, audioEnabled }) {
     this.elements.score.textContent = String(score);
     this.elements.targetChar.textContent = targetChar;

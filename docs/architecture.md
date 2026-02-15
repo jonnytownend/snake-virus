@@ -3,6 +3,7 @@
 ## Overview
 The app is intentionally split into small, single-purpose modules so game rules, rendering, audio, and input are isolated and easier to maintain.
 Because the app uses browser ES modules, run it through a static server if your browser blocks `file://` module loading.
+Architecture and tradeoff decisions are recorded in `docs/decisions.md`.
 
 ## File Map
 - `index.html`: semantic shell only, no inline CSS or gameplay logic.
