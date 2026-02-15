@@ -6,7 +6,7 @@
 - `M`: toggle audio (SFX + background track).
 
 ## Rendering Rules
-- The game board is a fixed-size character grid extracted from the in-page script.
+- The game board is a fixed-size character grid sourced from `src/game/source-text.js`.
 - Editor typography keeps standard code-like spacing (non-square glyph geometry).
 - Corrupted characters are replaced with whitespace holes (blank cells).
 
@@ -23,3 +23,9 @@
 - Audio is generated with Web Audio API oscillators (no external assets).
 - Eat, start, and crash events each trigger short synthesized SFX.
 - A low-volume looping pattern runs while audio is enabled.
+
+## Structure
+- `index.html` is a thin shell for layout containers and IDs.
+- `src/styles/main.css` contains all styling.
+- `src/main.js` is the bootstrap/assembly entrypoint.
+- Gameplay is split into dedicated modules under `src/game/` (engine, renderer, audio, input, syntax, grid, constants, state).
