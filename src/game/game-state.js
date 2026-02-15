@@ -14,6 +14,7 @@ function createInitialSnake(width, height) {
 export function createInitialState(width, height) {
   return {
     eaten: new Set(),
+    corruptedChars: new Map(),
     snake: createInitialSnake(width, height),
     direction: { ...START_DIRECTION },
     queuedDirection: { ...START_DIRECTION },

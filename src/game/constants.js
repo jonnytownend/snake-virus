@@ -17,6 +17,27 @@ export const HAZARD_SEQUENCE = [
   "8",
   "9"
 ];
+
+export const CORRUPTION_CHARS = [
+  "#",
+  "@",
+  "%",
+  "&",
+  "*",
+  "?",
+  "!",
+  "+",
+  "=",
+  "~",
+  "$",
+  "^",
+  "/",
+  "\\",
+  "|",
+  "<",
+  ">",
+  "_"
+];
 export const KEYWORDS = new Set([
   "const", "let", "var", "function", "return", "if", "else", "for", "while",
   "class", "new", "true", "false", "null", "undefined", "switch", "case",
@@ -61,5 +82,6 @@ export const UI_TEXT = Object.freeze({
   fullCorruption: "System fully corrupted. Press Space to replay.",
   fullCorruptionReset: "System fully corrupted. Press Space to run again.",
   crash: "Virus crashed. Press Space to re-run.",
-  hazardCrash: "Virus hit protected code. Press Space to re-run."
+  hazardCrash: "Virus hit protected code. Press Space to re-run.",
+  corruptionCrash: "Virus consumed corrupted code. Press Space to re-run."
 });

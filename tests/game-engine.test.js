@@ -198,6 +198,7 @@ describe("GameEngine", () => {
     engine.tick();
 
     expect(engine.state.eaten.has(cellKey(2, 1))).toBe(true);
+    expect(engine.state.corruptedChars.has(cellKey(2, 1))).toBe(true);
     expect(engine.state.eatenCount).toBe(1);
     expect(engine.state.eatenThisTarget).toBeGreaterThanOrEqual(0);
     expect(engine.state.score).toBeGreaterThan(oldScore);
@@ -293,6 +294,23 @@ describe("GameEngine", () => {
 
     expect(engine.state.gameOver).toBe(true);
     expect(renderer.setMessage).toHaveBeenCalledWith(UI_TEXT.hazardCrash);
+  });
+
+  test("collision with corrupted code ends game with corruption-specific message", () => {
+    const { engine, renderer } = createEngine();
+    engine.reset();
+
+    engine.state.running = true;
+    engine.state.direction = { x: 1, y: 0 };
+    engine.state.directionQueue = [];
+    engine.state.snake = [{ x: 4, y: 4 }];
+    engine.state.eaten = new Set([cellKey(5, 4)]);
+    engine.state.corruptedChars.set(cellKey(5, 4), "#");
+
+    engine.tick();
+
+    expect(engine.state.gameOver).toBe(true);
+    expect(renderer.setMessage).toHaveBeenCalledWith(UI_TEXT.corruptionCrash);
   });
 
   test("refreshHazards creates avoid cells as progression increases", () => {

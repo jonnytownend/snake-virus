@@ -1,4 +1,5 @@
 import {
+  CORRUPTION_CHARS,
   GRID,
   HAZARDS,
   HAZARD_SEQUENCE,
@@ -149,6 +150,7 @@ export class GameEngine {
       codeGrid: this.codeGrid,
       styleGrid: this.styleGrid,
       eaten: this.state.eaten,
+      corruptedChars: this.state.corruptedChars,
       activeTargets: this.state.activeTargets,
       hazardCells: this.state.hazardCells,
       snake: this.state.snake,
@@ -180,6 +182,11 @@ export class GameEngine {
     }
 
     const nextKey = cellKey(next.x, next.y);
+    if (this.state.eaten.has(nextKey)) {
+      this.endGame(false, false, true);
+      return;
+    }
+
     if (this.state.hazardCells.has(nextKey)) {
       this.endGame(false, true);
       return;
@@ -219,6 +226,7 @@ export class GameEngine {
   eatTarget(cell) {
     this.state.activeTargets.delete(cell);
     this.state.eaten.add(cell);
+    this.state.corruptedChars.set(cell, this.randomCorruptionChar());
     this.state.hazardCells.delete(cell);
     this.state.eatenCount += 1;
     this.state.eatenThisTarget += 1;
@@ -240,6 +248,11 @@ export class GameEngine {
     }
 
     this.maybeRefreshTargets();
+  }
+
+  randomCorruptionChar() {
+    const idx = Math.floor(Math.random() * CORRUPTION_CHARS.length);
+    return CORRUPTION_CHARS[idx];
   }
 
   maybeRefreshTargets() {
@@ -350,7 +363,7 @@ export class GameEngine {
     }
   }
 
-  endGame(didWin, hitHazard = false) {
+  endGame(didWin, hitHazard = false, hitCorruption = false) {
     this.state.running = false;
     this.state.gameOver = true;
     this.state.won = didWin;
@@ -361,7 +374,9 @@ export class GameEngine {
 
     const message = didWin
       ? UI_TEXT.fullCorruption
-      : (hitHazard ? UI_TEXT.hazardCrash : UI_TEXT.crash);
+      : (hitCorruption
+        ? UI_TEXT.corruptionCrash
+        : (hitHazard ? UI_TEXT.hazardCrash : UI_TEXT.crash));
 
     this.renderer.setMessage(message);
     this.render();

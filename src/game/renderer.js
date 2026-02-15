@@ -40,7 +40,6 @@ export class Renderer {
     const gutterWidth = 42;
     const usableWidth = Math.max(0, editor.clientWidth - paddingX - gutterWidth);
     const usableHeight = Math.max(0, editor.clientHeight - paddingY);
-
     return {
       width: Math.max(24, Math.floor(usableWidth / charWidth)),
       height: Math.max(12, Math.floor(usableHeight / lineHeight))
@@ -75,6 +74,7 @@ export class Renderer {
     codeGrid,
     styleGrid,
     eaten,
+    corruptedChars,
     activeTargets,
     hazardCells,
     snake,
@@ -94,8 +94,8 @@ export class Renderer {
         let className = `cell ${styleGrid[y][x]}`;
 
         if (eaten.has(key)) {
-          char = " ";
-          className += " hole";
+          char = corruptedChars.get(key) || "#";
+          className += " corrupted";
         } else if (hazardCells.has(key)) {
           className += " hazard";
         } else if (activeTargets.has(key)) {

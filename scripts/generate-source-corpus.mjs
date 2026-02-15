@@ -4,7 +4,7 @@ import path from "node:path";
 const ROOT = process.cwd();
 const OUT_FILE = path.join(ROOT, "src/game/source-corpus.js");
 
-const INCLUDE_EXTENSIONS = new Set([".js", ".css", ".html", ".md", ".json"]);
+const INCLUDE_EXTENSIONS = new Set([".js"]);
 const IGNORE_DIRS = new Set([".git", "node_modules", "coverage", "dist", "build"]);
 const IGNORE_FILES = new Set([
   "src/game/source-corpus.js",
@@ -13,13 +13,9 @@ const IGNORE_FILES = new Set([
 
 function shouldInclude(relPath) {
   const normalized = relPath.replace(/\\/g, "/");
-  if (normalized === "index.html") return true;
-  if (normalized === "README.md") return true;
-  if (normalized === "AGENTS.md") return true;
-  if (normalized === "package.json") return true;
   if (normalized === "jest.config.js") return true;
   if (normalized.startsWith("src/")) return true;
-  if (normalized.startsWith("docs/")) return true;
+  if (normalized.startsWith("scripts/")) return true;
   if (normalized.startsWith("tests/")) return true;
   return false;
 }

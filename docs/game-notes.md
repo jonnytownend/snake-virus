@@ -6,12 +6,13 @@
 - `M`: toggle audio (SFX + background track).
 
 ## Rendering Rules
-- The game board is sourced from real repository files via `src/game/source-corpus.js`.
+- The game board is sourced from real repository JavaScript files via `src/game/source-corpus.js`.
 - A different source slice is selected each run/reset.
 - The virtual IDE window is centered in the browser page with surrounding spacing.
 - Editor typography keeps standard code-like spacing (non-square glyph geometry).
-- Corrupted characters are replaced with whitespace holes (blank cells).
+- Corrupted characters are replaced with persistent random corruption glyphs.
 - Play-area dimensions are measured from the editor viewport so bounds align with visible panel edges.
+- Slightly larger code font reduces visible cell count and raises difficulty.
 
 ## Movement Timing
 - The game uses one shared movement speed for all directions.
@@ -22,7 +23,7 @@
 - Lightweight JavaScript-style syntax highlighting is applied per character cell.
 - Highlight classes include keyword, string, number, comment, function name, and punctuation.
 - Active target characters always override syntax color to remain readable.
-- Hazard characters are highlighted in red and must be avoided.
+- All dangerous corruption cells are highlighted with one consistent red style (including progression hazards and eaten-cell corruption).
 
 ## Targeting Rules
 - Multiple target character classes are active at the same time.
@@ -33,6 +34,7 @@
 - Hazard characters unlock after an early progression threshold.
 - Hazard density increases as more code is corrupted.
 - Touching a hazard cell ends the run immediately.
+- Re-entering a previously corrupted (eaten) cell also ends the run immediately.
 
 ## Audio
 - Audio is generated with Web Audio API oscillators (no external assets).
