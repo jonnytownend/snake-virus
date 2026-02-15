@@ -31,3 +31,18 @@
 - Context: Full-viewport virtual window removed desired page framing/spacing.
 - Decision: Revert to centered virtual window styling and retain dynamic board sizing based on editor viewport.
 - Consequence: The snake still reaches the rendered window's visible editor edges, while the virtual window remains centered inside the real browser window.
+
+### Decision: Source map content from generated real repository corpus
+- Context: Static hardcoded code blocks reduced replay value and did not reflect the actual project.
+- Decision: Add `scripts/generate-source-corpus.mjs` to generate `src/game/source-corpus.js`, and select random source windows per run.
+- Consequence: Each play session can render a different real code slice while remaining browser-only at runtime.
+
+### Decision: Introduce progressive hazard cells separate from target cells
+- Context: Gameplay needed additional pressure and failure modes beyond walls/self-collision.
+- Decision: Add hazard character classes that unlock after early progression and scale in density over time.
+- Consequence: Runs become more challenging as corruption progresses; touching a hazard ends the run.
+
+### Decision: Promote multi-target cycles instead of single active target char
+- Context: Single-target loops could feel sparse and repetitive at higher speed.
+- Decision: Activate multiple target character classes simultaneously, with per-cycle quotas and dynamic spawn volume.
+- Consequence: More actionable targets are present at any moment, improving flow and reducing dead movement.

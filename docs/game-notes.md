@@ -6,7 +6,8 @@
 - `M`: toggle audio (SFX + background track).
 
 ## Rendering Rules
-- The game board is a fixed-size character grid sourced from `src/game/source-text.js`.
+- The game board is sourced from real repository files via `src/game/source-corpus.js`.
+- A different source slice is selected each run/reset.
 - The virtual IDE window is centered in the browser page with surrounding spacing.
 - Editor typography keeps standard code-like spacing (non-square glyph geometry).
 - Corrupted characters are replaced with whitespace holes (blank cells).
@@ -21,6 +22,17 @@
 - Lightweight JavaScript-style syntax highlighting is applied per character cell.
 - Highlight classes include keyword, string, number, comment, function name, and punctuation.
 - Active target characters always override syntax color to remain readable.
+- Hazard characters are highlighted in red and must be avoided.
+
+## Targeting Rules
+- Multiple target character classes are active at the same time.
+- As progression increases, more target classes and more active target cells are spawned.
+- A target cycle completes after a quota of successful corruptions, then a new target set is selected.
+
+## Hazard Rules
+- Hazard characters unlock after an early progression threshold.
+- Hazard density increases as more code is corrupted.
+- Touching a hazard cell ends the run immediately.
 
 ## Audio
 - Audio is generated with Web Audio API oscillators (no external assets).
@@ -33,4 +45,5 @@
 - `src/styles/main.css` contains all styling.
 - `src/main.js` is the bootstrap/assembly entrypoint.
 - Gameplay is split into dedicated modules under `src/game/` (engine, renderer, audio, input, syntax, grid, constants, state).
+- Real source-code corpus generation is handled by `scripts/generate-source-corpus.mjs`.
 - Architecture/design decisions are logged in `docs/decisions.md`.

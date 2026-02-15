@@ -1,5 +1,5 @@
 import { jest } from "@jest/globals";
-import { UI_TEXT } from "../src/game/constants.js";
+import { HAZARDS, UI_TEXT } from "../src/game/constants.js";
 import { GameEngine } from "../src/game/game-engine.js";
 import { cellKey } from "../src/game/grid.js";
 
@@ -41,6 +41,7 @@ function createEngine(options = {}) {
   const engine = new GameEngine({
     renderer,
     audio,
+    sourceProvider: options.sourceProvider,
     sourceText: options.sourceText ?? buildSource()
   });
 
@@ -71,7 +72,8 @@ describe("GameEngine", () => {
     expect(renderer.renderBoard).toHaveBeenCalled();
 
     const lastHud = renderer.updateStatus.mock.calls.at(-1)[0];
-    expect(lastHud.targetChar).toBe("{");
+    expect(lastHud.targetChar.length).toBeGreaterThan(0);
+    expect(lastHud.targetChar).toContain("{");
   });
 
   test("reset uses renderer-measured board size when available", () => {
@@ -82,6 +84,16 @@ describe("GameEngine", () => {
     expect(engine.boardSize).toEqual({ width: 40, height: 18 });
     expect(engine.codeGrid.length).toBe(18);
     expect(engine.codeGrid[0].length).toBe(40);
+  });
+
+  test("uses custom source provider when supplied", () => {
+    const sourceProvider = { nextSource: jest.fn(() => "{ provider-source }") };
+    const { engine } = createEngine({ sourceProvider });
+
+    engine.reset();
+
+    expect(sourceProvider.nextSource).toHaveBeenCalled();
+    expect(engine.currentSourceText).toContain("provider-source");
   });
 
   test("start begins loop and triggers start SFX", () => {
@@ -251,20 +263,82 @@ describe("GameEngine", () => {
     expect(engine.state.eatenThisTarget).toBe(0);
   });
 
-  test("pickNextTarget reports full corruption when no targets remain", () => {
+  test("pickNextTargets reports full corruption when no targets remain", () => {
     const { engine, renderer } = createEngine({ sourceText: "{" });
     engine.reset();
 
     engine.state.eaten.add("0,0");
     engine.state.activeTargets.clear();
 
-    const found = engine.pickNextTarget();
+    const found = engine.pickNextTargets();
 
     expect(found).toBe(false);
     expect(engine.state.gameOver).toBe(true);
     expect(engine.state.won).toBe(true);
     expect(engine.audio.setPlaybackActive).toHaveBeenCalledWith(false);
     expect(renderer.setMessage).toHaveBeenCalledWith(UI_TEXT.fullCorruptionReset);
+  });
+
+  test("hazard collision ends game with hazard-specific message", () => {
+    const { engine, renderer } = createEngine();
+    engine.reset();
+
+    engine.state.running = true;
+    engine.state.direction = { x: 1, y: 0 };
+    engine.state.directionQueue = [];
+    engine.state.snake = [{ x: 2, y: 2 }];
+    engine.state.hazardCells = new Set([cellKey(3, 2)]);
+
+    engine.tick();
+
+    expect(engine.state.gameOver).toBe(true);
+    expect(renderer.setMessage).toHaveBeenCalledWith(UI_TEXT.hazardCrash);
+  });
+
+  test("refreshHazards creates avoid cells as progression increases", () => {
+    const { engine } = createEngine();
+    engine.reset();
+
+    engine.state.eatenCount = HAZARDS.unlockAtEaten + HAZARDS.growthStep * 2;
+    engine.state.activeTargets = new Set();
+    engine.state.hazardCells = new Set(["0,0"]);
+    engine.state.snake = [{ x: 10, y: 10 }];
+
+    engine.refreshHazards(true);
+
+    expect(engine.state.activeHazardChars.length).toBeGreaterThan(0);
+    expect(engine.state.hazardCells.size).toBeGreaterThan(0);
+  });
+
+  test("refreshHazards clears existing hazards when below unlock threshold", () => {
+    const { engine } = createEngine();
+    engine.reset();
+
+    engine.state.eatenCount = 0;
+    engine.state.hazardCells = new Set(["1,1", "2,2"]);
+    engine.state.activeHazardChars = [":", "."];
+
+    engine.refreshHazards();
+
+    expect(engine.state.hazardCells.size).toBe(0);
+    expect(engine.state.activeHazardChars).toEqual([]);
+  });
+
+  test("label helpers handle empty and populated states", () => {
+    const { engine } = createEngine();
+    engine.reset();
+
+    engine.state.activeTargetChars = [];
+    engine.state.currentTargetIndex = 0;
+    expect(engine.currentTargetLabel()).toBe("{");
+
+    engine.state.activeHazardChars = [];
+    expect(engine.currentAvoidLabel()).toBe("-");
+
+    engine.state.activeTargetChars = ["{", "}", ";"];
+    engine.state.activeHazardChars = [":", "."];
+    expect(engine.currentTargetLabel()).toBe("{ } ;");
+    expect(engine.currentAvoidLabel()).toBe(": .");
   });
 
   test("tick keeps full-corruption message when terminal state happens mid-tick", () => {

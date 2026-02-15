@@ -2,7 +2,7 @@ import { AudioEngine } from "./game/audio-engine.js";
 import { GameEngine } from "./game/game-engine.js";
 import { bindInput } from "./game/input-controller.js";
 import { Renderer } from "./game/renderer.js";
-import { SOURCE_TEXT } from "./game/source-text.js";
+import { SourceTextProvider } from "./game/source-text.js";
 
 function requireElement(id) {
   const element = document.getElementById(id);
@@ -15,6 +15,7 @@ const elements = {
   editor: requireElement("editor"),
   score: requireElement("score"),
   targetChar: requireElement("targetChar"),
+  avoidChars: requireElement("avoidChars"),
   eaten: requireElement("eaten"),
   speed: requireElement("speed"),
   audioStatus: requireElement("audioStatus"),
@@ -23,7 +24,8 @@ const elements = {
 
 const renderer = new Renderer(elements);
 const audio = new AudioEngine((enabled) => renderer.updateAudioStatus(enabled));
-const game = new GameEngine({ renderer, audio, sourceText: SOURCE_TEXT });
+const sourceProvider = new SourceTextProvider();
+const game = new GameEngine({ renderer, audio, sourceProvider });
 
 const unbindInput = bindInput({
   onDirection: (x, y) => game.setDirection(x, y),

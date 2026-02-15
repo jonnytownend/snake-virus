@@ -1,58 +1,70 @@
-export const SOURCE_TEXT = `/**
- * code-virus architecture sketch
- *
- * This game intentionally renders code as the map.
- * The player controls a virus moving through source lines.
- */
+import { HAZARD_SEQUENCE, TARGET_SEQUENCE } from "./constants.js";
+import { SOURCE_CORPUS } from "./source-corpus.js";
 
-import { GameEngine } from "./game-engine";
-import { Renderer } from "./renderer";
-import { AudioEngine } from "./audio-engine";
+const INTEREST_CHARS = new Set([...TARGET_SEQUENCE, ...HAZARD_SEQUENCE]);
 
-const GRID = { width: 72, height: 30 };
-const TARGET_SEQUENCE = ["{", "}", "(", ")", "[", "]", ";", "=", "<", ">"];
-
-function bootstrap(documentRef) {
-  const ui = {
-    score: documentRef.getElementById("score"),
-    target: documentRef.getElementById("targetChar"),
-    corrupted: documentRef.getElementById("eaten"),
-    speed: documentRef.getElementById("speed"),
-    audio: documentRef.getElementById("audioStatus"),
-    editor: documentRef.getElementById("editor")
-  };
-
-  const renderer = new Renderer(ui);
-  const audio = new AudioEngine();
-  const engine = new GameEngine({ renderer, audio, grid: GRID });
-
-  engine.reset();
-  engine.bindInput();
-
-  return engine;
+function scoreContent(content) {
+  let score = 0;
+  for (let i = 0; i < content.length; i += 1) {
+    if (INTEREST_CHARS.has(content[i])) score += 1;
+  }
+  return score;
 }
 
-class VirusCell {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
+function normalizeCorpus(corpus) {
+  return corpus
+    .map((entry) => {
+      const lines = entry.content.split("\n");
+      return {
+        path: entry.path,
+        lines,
+        interestScore: scoreContent(entry.content)
+      };
+    })
+    .filter((entry) => entry.lines.length > 0);
+}
+
+export class SourceTextProvider {
+  constructor(corpus = SOURCE_CORPUS) {
+    this.entries = normalizeCorpus(corpus);
+    this.lastPick = null;
+  }
+
+  nextSource({ width, height }) {
+    if (this.entries.length === 0) return "";
+
+    const viable = this.entries.filter((entry) => entry.interestScore >= 18);
+    const pool = viable.length > 0 ? viable : this.entries;
+    let index = Math.floor(Math.random() * pool.length);
+
+    if (pool.length > 1 && this.lastPick && pool[index].path === this.lastPick.path) {
+      index = (index + 1 + Math.floor(Math.random() * (pool.length - 1))) % pool.length;
+    }
+
+    const entry = pool[index];
+    const bodyLines = Math.max(1, height - 2);
+    const maxStart = Math.max(0, entry.lines.length - bodyLines);
+    let start = maxStart > 0 ? Math.floor(Math.random() * (maxStart + 1)) : 0;
+
+    if (
+      maxStart > 0 &&
+      this.lastPick &&
+      this.lastPick.path === entry.path &&
+      this.lastPick.start === start
+    ) {
+      start = (start + 1 + Math.floor(Math.random() * maxStart)) % (maxStart + 1);
+    }
+
+    const end = start + bodyLines;
+    const selected = entry.lines.slice(start, end);
+    const header = [
+      `// source: ${entry.path}`,
+      `// region: ${start + 1}-${Math.min(entry.lines.length, end)}`
+    ];
+
+    const clipped = selected.map((line) => line.slice(0, Math.max(8, width)));
+    this.lastPick = { path: entry.path, start };
+    return [...header, ...clipped].join("\n");
   }
 }
 
-function isInBounds(x, y, bounds) {
-  return x >= 0 && y >= 0 && x < bounds.width && y < bounds.height;
-}
-
-function scoreDelta(length) {
-  return 12 + length;
-}
-
-const palette = {
-  keyword: "#6ed0ff",
-  comment: "#637f99",
-  string: "#f7a86e",
-  number: "#79e6a4",
-  target: "#ffd166"
-};
-
-export { bootstrap, isInBounds, scoreDelta, palette };`;

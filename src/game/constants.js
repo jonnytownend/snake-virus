@@ -1,4 +1,22 @@
 export const TARGET_SEQUENCE = ["{", "}", "(", ")", "[", "]", ";", "=", "<", ">"];
+export const HAZARD_SEQUENCE = [
+  ":",
+  ".",
+  ",",
+  "\"",
+  "'",
+  "`",
+  "0",
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9"
+];
 export const KEYWORDS = new Set([
   "const", "let", "var", "function", "return", "if", "else", "for", "while",
   "class", "new", "true", "false", "null", "undefined", "switch", "case",
@@ -11,10 +29,22 @@ export const GRID = Object.freeze({
 });
 
 export const TARGETS = Object.freeze({
-  maxActive: 16,
-  baseQuota: 5,
-  maxQuota: 10,
-  scoreStep: 80
+  minChars: 2,
+  maxChars: 4,
+  charGrowthStep: 22,
+  perCharBase: 8,
+  perCharMax: 20,
+  perCharScoreStep: 120,
+  baseQuota: 8,
+  maxQuota: 20,
+  scoreStep: 70
+});
+
+export const HAZARDS = Object.freeze({
+  unlockAtEaten: 8,
+  baseCount: 4,
+  growthStep: 6,
+  maxCount: 100
 });
 
 export const SPEED = Object.freeze({
@@ -30,5 +60,6 @@ export const UI_TEXT = Object.freeze({
   ready: "Press Space to deploy virus.",
   fullCorruption: "System fully corrupted. Press Space to replay.",
   fullCorruptionReset: "System fully corrupted. Press Space to run again.",
-  crash: "Virus crashed. Press Space to re-run."
+  crash: "Virus crashed. Press Space to re-run.",
+  hazardCrash: "Virus hit protected code. Press Space to re-run."
 });

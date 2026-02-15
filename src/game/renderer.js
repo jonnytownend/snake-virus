@@ -47,9 +47,10 @@ export class Renderer {
     };
   }
 
-  updateStatus({ score, targetChar, eaten, speed, audioEnabled }) {
+  updateStatus({ score, targetChar, avoidChars, eaten, speed, audioEnabled }) {
     this.elements.score.textContent = String(score);
     this.elements.targetChar.textContent = targetChar;
+    this.elements.avoidChars.textContent = avoidChars;
     this.elements.eaten.textContent = String(eaten);
     this.elements.speed.textContent = `${speed.toFixed(1)}x`;
     this.updateAudioStatus(audioEnabled);
@@ -70,7 +71,16 @@ export class Renderer {
     setTimeout(() => this.elements.app.classList.remove("glitch"), 130);
   }
 
-  renderBoard({ codeGrid, styleGrid, eaten, activeTargets, snake, gameOver, won }) {
+  renderBoard({
+    codeGrid,
+    styleGrid,
+    eaten,
+    activeTargets,
+    hazardCells,
+    snake,
+    gameOver,
+    won
+  }) {
     const snakeSet = new Set(snake.map((segment) => cellKey(segment.x, segment.y)));
     const headKey = snake[0] ? cellKey(snake[0].x, snake[0].y) : "";
 
@@ -86,6 +96,8 @@ export class Renderer {
         if (eaten.has(key)) {
           char = " ";
           className += " hole";
+        } else if (hazardCells.has(key)) {
+          className += " hazard";
         } else if (activeTargets.has(key)) {
           className += " target";
         }

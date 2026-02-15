@@ -1,5 +1,7 @@
 import {
   GRID,
+  HAZARDS,
+  HAZARD_SEQUENCE,
   KEYWORDS,
   SPEED,
   TARGET_SEQUENCE,
@@ -16,12 +18,23 @@ import {
 } from "./grid.js";
 import { buildStyleGrid } from "./syntax-highlighter.js";
 
+function asSourceProvider(sourceProvider, sourceText) {
+  if (sourceProvider && typeof sourceProvider.nextSource === "function") {
+    return sourceProvider;
+  }
+
+  return {
+    nextSource: () => sourceText || ""
+  };
+}
+
 export class GameEngine {
-  constructor({ renderer, audio, sourceText }) {
+  constructor({ renderer, audio, sourceProvider, sourceText = "" }) {
     this.renderer = renderer;
     this.audio = audio;
-    this.sourceText = sourceText;
+    this.sourceProvider = asSourceProvider(sourceProvider, sourceText);
 
+    this.currentSourceText = sourceText;
     this.codeGrid = [];
     this.styleGrid = [];
     this.boardSize = { ...GRID };
@@ -36,7 +49,8 @@ export class GameEngine {
     this.rebuildBoard();
     this.state = createInitialState(this.boardSize.width, this.boardSize.height);
 
-    this.pickNextTarget();
+    this.pickNextTargets();
+    this.refreshHazards();
     this.syncHud();
     this.renderer.setMessage(UI_TEXT.ready);
     this.render();
@@ -80,8 +94,13 @@ export class GameEngine {
   }
 
   rebuildBoard() {
+    this.currentSourceText = this.sourceProvider.nextSource({
+      width: this.boardSize.width,
+      height: this.boardSize.height
+    });
+
     this.codeGrid = buildCodeGrid(
-      this.sourceText,
+      this.currentSourceText,
       this.boardSize.width,
       this.boardSize.height
     );
@@ -117,7 +136,8 @@ export class GameEngine {
   syncHud() {
     this.renderer.updateStatus({
       score: this.state.score,
-      targetChar: this.currentTargetChar(),
+      targetChar: this.currentTargetLabel(),
+      avoidChars: this.currentAvoidLabel(),
       eaten: this.state.eatenCount,
       speed: this.state.speed,
       audioEnabled: this.audio.isEnabled()
@@ -130,6 +150,7 @@ export class GameEngine {
       styleGrid: this.styleGrid,
       eaten: this.state.eaten,
       activeTargets: this.state.activeTargets,
+      hazardCells: this.state.hazardCells,
       snake: this.state.snake,
       gameOver: this.state.gameOver,
       won: this.state.won
@@ -158,9 +179,14 @@ export class GameEngine {
       return;
     }
 
+    const nextKey = cellKey(next.x, next.y);
+    if (this.state.hazardCells.has(nextKey)) {
+      this.endGame(false, true);
+      return;
+    }
+
     this.state.snake.unshift(next);
 
-    const nextKey = cellKey(next.x, next.y);
     if (this.state.activeTargets.has(nextKey)) {
       this.eatTarget(nextKey);
     } else if (this.state.growth > 0) {
@@ -175,6 +201,7 @@ export class GameEngine {
       return;
     }
 
+    this.refreshHazards();
     this.syncHud();
     this.renderer.setMessage(this.progressMessage());
     this.updateLoopSpeed();
@@ -192,6 +219,7 @@ export class GameEngine {
   eatTarget(cell) {
     this.state.activeTargets.delete(cell);
     this.state.eaten.add(cell);
+    this.state.hazardCells.delete(cell);
     this.state.eatenCount += 1;
     this.state.eatenThisTarget += 1;
     this.state.score += 12 + this.state.snake.length;
@@ -206,9 +234,8 @@ export class GameEngine {
     this.audio.playEatSfx();
 
     if (this.state.eatenThisTarget >= this.state.targetQuota) {
-      this.state.currentTargetIndex =
-        (this.state.currentTargetIndex + 1) % TARGET_SEQUENCE.length;
-      this.pickNextTarget();
+      this.pickNextTargets();
+      this.refreshHazards(true);
       return;
     }
 
@@ -217,39 +244,113 @@ export class GameEngine {
 
   maybeRefreshTargets() {
     if (this.state.activeTargets.size > 0) return;
-    this.pickNextTarget();
+    this.pickNextTargets();
   }
 
-  pickNextTarget() {
-    for (let i = 0; i < TARGET_SEQUENCE.length; i += 1) {
+  pickNextTargets() {
+    const charCount = Math.min(
+      TARGETS.maxChars,
+      TARGETS.minChars + Math.floor(this.state.eatenCount / TARGETS.charGrowthStep)
+    );
+
+    const selected = [];
+    for (let i = 0; i < TARGET_SEQUENCE.length && selected.length < charCount; i += 1) {
       const idx = (this.state.currentTargetIndex + i) % TARGET_SEQUENCE.length;
       const char = TARGET_SEQUENCE[idx];
       const pool = collectTargetCandidates(this.codeGrid, char, this.state.eaten);
+      if (pool.length === 0) continue;
+      selected.push({ idx, char, pool });
+    }
 
-      if (pool.length > 0) {
-        this.state.currentTargetIndex = idx;
-        this.state.activeTargets = new Set(
-          shuffled(pool).slice(0, TARGETS.maxActive)
-        );
-        this.state.eatenThisTarget = 0;
-        this.state.targetQuota = Math.min(
-          TARGETS.maxQuota,
-          TARGETS.baseQuota + Math.floor(this.state.score / TARGETS.scoreStep)
-        );
-        return true;
+    if (selected.length === 0) {
+      this.state.won = true;
+      this.state.running = false;
+      this.state.gameOver = true;
+      this.stopLoop();
+      this.audio.setPlaybackActive(false);
+      this.renderer.setMessage(UI_TEXT.fullCorruptionReset);
+      return false;
+    }
+
+    const perCharCap = Math.min(
+      TARGETS.perCharMax,
+      TARGETS.perCharBase + Math.floor(this.state.score / TARGETS.perCharScoreStep)
+    );
+
+    const targetCells = new Set();
+    for (const item of selected) {
+      for (const cell of shuffled(item.pool).slice(0, perCharCap)) {
+        targetCells.add(cell);
       }
     }
 
-    this.state.won = true;
-    this.state.running = false;
-    this.state.gameOver = true;
-    this.stopLoop();
-    this.audio.setPlaybackActive(false);
-    this.renderer.setMessage(UI_TEXT.fullCorruptionReset);
-    return false;
+    this.state.activeTargetChars = selected.map((item) => item.char);
+    this.state.currentTargetIndex = (selected[selected.length - 1].idx + 1) % TARGET_SEQUENCE.length;
+    this.state.activeTargets = targetCells;
+    this.state.eatenThisTarget = 0;
+    this.state.targetQuota = Math.min(
+      TARGETS.maxQuota,
+      TARGETS.baseQuota + Math.floor(this.state.score / TARGETS.scoreStep)
+    );
+
+    return true;
   }
 
-  endGame(didWin) {
+  desiredHazardCount() {
+    if (this.state.eatenCount < HAZARDS.unlockAtEaten) return 0;
+    const growth = Math.floor((this.state.eatenCount - HAZARDS.unlockAtEaten) / HAZARDS.growthStep);
+    return Math.min(HAZARDS.maxCount, HAZARDS.baseCount + growth * 3);
+  }
+
+  refreshHazards(forceReset = false) {
+    const desiredCount = this.desiredHazardCount();
+    if (desiredCount <= 0) {
+      this.state.hazardCells.clear();
+      this.state.activeHazardChars = [];
+      return;
+    }
+
+    if (forceReset) this.state.hazardCells.clear();
+
+    const snakeSet = new Set(this.state.snake.map((segment) => cellKey(segment.x, segment.y)));
+    const byChar = new Map();
+
+    for (const char of HAZARD_SEQUENCE) {
+      const candidates = collectTargetCandidates(this.codeGrid, char, this.state.eaten)
+        .filter((key) => !this.state.activeTargets.has(key))
+        .filter((key) => !snakeSet.has(key));
+
+      if (candidates.length > 0) byChar.set(char, shuffled(candidates));
+    }
+
+    this.state.activeHazardChars = [...byChar.keys()].slice(0, 4);
+
+    const validExisting = new Set();
+    for (const key of this.state.hazardCells) {
+      if (this.state.activeTargets.has(key) || this.state.eaten.has(key) || snakeSet.has(key)) continue;
+      const [x, y] = key.split(",").map(Number);
+      if (!inBounds(x, y, this.boardSize.width, this.boardSize.height)) continue;
+      validExisting.add(key);
+    }
+
+    this.state.hazardCells = validExisting;
+
+    const pools = [...byChar.values()];
+    let poolIndex = 0;
+    while (this.state.hazardCells.size < desiredCount && pools.length > 0) {
+      const pool = pools[poolIndex % pools.length];
+      const next = pool.pop();
+      if (next) this.state.hazardCells.add(next);
+      poolIndex += 1;
+
+      if (pool.length === 0) {
+        const idx = pools.indexOf(pool);
+        if (idx >= 0) pools.splice(idx, 1);
+      }
+    }
+  }
+
+  endGame(didWin, hitHazard = false) {
     this.state.running = false;
     this.state.gameOver = true;
     this.state.won = didWin;
@@ -258,15 +359,30 @@ export class GameEngine {
 
     if (!didWin) this.audio.playCrashSfx();
 
-    this.renderer.setMessage(didWin ? UI_TEXT.fullCorruption : UI_TEXT.crash);
+    const message = didWin
+      ? UI_TEXT.fullCorruption
+      : (hitHazard ? UI_TEXT.hazardCrash : UI_TEXT.crash);
+
+    this.renderer.setMessage(message);
     this.render();
   }
 
-  currentTargetChar() {
-    return TARGET_SEQUENCE[this.state.currentTargetIndex] || TARGET_SEQUENCE[0];
+  currentTargetLabel() {
+    if (this.state.activeTargetChars.length === 0) {
+      return TARGET_SEQUENCE[this.state.currentTargetIndex] || TARGET_SEQUENCE[0];
+    }
+
+    return this.state.activeTargetChars.join(" ");
+  }
+
+  currentAvoidLabel() {
+    if (this.state.activeHazardChars.length === 0) return "-";
+    return this.state.activeHazardChars.join(" ");
   }
 
   progressMessage() {
-    return `Corrupt '${this.currentTargetChar()}' characters (${this.state.eatenThisTarget}/${this.state.targetQuota}).`;
+    const target = this.currentTargetLabel();
+    const avoid = this.currentAvoidLabel();
+    return `Corrupt [${target}] (${this.state.eatenThisTarget}/${this.state.targetQuota}). Avoid [${avoid}].`;
   }
 }

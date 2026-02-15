@@ -9,10 +9,12 @@ Architecture and tradeoff decisions are recorded in `docs/decisions.md`.
 - `index.html`: semantic shell only, no inline CSS or gameplay logic.
 - `src/styles/main.css`: all presentation styles.
 - `src/main.js`: composition root that wires dependencies and bootstraps the app.
+- `scripts/generate-source-corpus.mjs`: builds runtime source corpus from repository files.
 
 ## Game Modules (`src/game`)
 - `constants.js`: gameplay/system constants and UI copy.
 - `source-text.js`: code block content used as the in-game map.
+- `source-corpus.js`: generated corpus of repository files consumed by the source provider.
 - `game-state.js`: initial state factory.
 - `grid.js`: pure grid utilities (bounds, keying, target discovery, shuffling).
 - `syntax-highlighter.js`: pure token-class derivation for syntax coloring.
@@ -26,3 +28,4 @@ Architecture and tradeoff decisions are recorded in `docs/decisions.md`.
 - `renderer.js` receives state snapshots and draws; it does not own game rules.
 - `audio-engine.js` is event-driven by the engine; gameplay logic does not depend on Web Audio internals.
 - `input-controller.js` only emits intents (direction/start/toggle), keeping controls decoupled from rules.
+- Source selection is abstracted behind a provider so gameplay logic does not depend on filesystem APIs.
