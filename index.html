@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Code Virus: Snake</title>
+    <style>
+      :root {
+        --bg: #0f141a;
+        --panel: #151d26;
+        --panel-2: #1c2732;
+        --ink: #d6e2f0;
+        --muted: #88a4bf;
+        --accent: #7ef2c5;
+        --danger: #ff7a8a;
+        --line: #243545;
+        --target: #ffd166;
+        --virus: #8bff66;
+        --virus-head: #e6ff96;
+        --tk-keyword: #6ed0ff;
+        --tk-string: #f7a86e;
+        --tk-number: #79e6a4;
+        --tk-comment: #637f99;
+        --tk-function: #d2b7ff;
+        --tk-punct: #9db7d1;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 20% -10%, #25435f 0%, transparent 30%),
+          radial-gradient(circle at 120% 0%, #2e2244 0%, transparent 35%),
+          linear-gradient(180deg, #0b1015 0%, var(--bg) 65%);
+        font-family: "JetBrains Mono", "IBM Plex Mono", "Fira Code", monospace;
+        display: grid;
+        place-items: center;
+        padding: 18px;
+      }
+
+      .app {
+        width: min(1140px, 100%);
+        border: 1px solid #27394b;
+        border-radius: 14px;
+        overflow: hidden;
+        background: linear-gradient(180deg, #101821 0%, #0f151d 100%);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      }
+
+      .titlebar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #0d1319;
+        border-bottom: 1px solid var(--line);
+        padding: 10px 14px;
+        font-size: 13px;
+      }
+
+      .lights {
+        display: flex;
+        gap: 7px;
+      }
+
+      .light {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .light.r {
+        background: #ff5f57;
+      }
+
+      .light.y {
+        background: #ffbd2e;
+      }
+
+      .light.g {
+        background: #27c93f;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: 230px 1fr;
+        min-height: min(760px, calc(100vh - 70px));
+      }
+
+      .hud {
+        background: var(--panel);
+        border-right: 1px solid var(--line);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .hud h1 {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.2;
+        letter-spacing: 0.4px;
+      }
+
+      .status {
+        display: grid;
+        gap: 8px;
+      }
+
+      .item {
+        background: var(--panel-2);
+        border: 1px solid #2a3d4f;
+        border-radius: 10px;
+        padding: 10px;
+      }
+
+      .k {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .v {
+        font-size: 18px;
+        color: var(--accent);
+        margin-top: 2px;
+      }
+
+      .help {
+        font-size: 12px;
+        line-height: 1.45;
+        color: #aec3d8;
+      }
+
+      .cta {
+        margin-top: auto;
+        border: 1px dashed #355068;
+        border-radius: 10px;
+        background: #14202a;
+        color: #b5d0e7;
+        font-size: 12px;
+        padding: 10px;
+      }
+
+      .editor-wrap {
+        position: relative;
+        background: #0e151d;
+        overflow: hidden;
+      }
+
+      .editor-head {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        font-size: 12px;
+        color: #87a6c3;
+        border-bottom: 1px solid var(--line);
+        padding: 9px 12px;
+        background: #121b25;
+      }
+
+      #editor {
+        margin: 0;
+        padding: 14px 12px 20px 12px;
+        font-size: 14px;
+        line-height: 1.2;
+        white-space: pre;
+        overflow: auto;
+        height: calc(100% - 37px);
+      }
+
+      .line {
+        display: block;
+      }
+
+      .ln {
+        display: inline-block;
+        width: 42px;
+        color: #4f6c87;
+        user-select: none;
+      }
+
+      .ch {
+        color: #cad8e8;
+      }
+
+      .cell {
+        display: inline-block;
+      }
+
+      .hole {
+        background: rgba(9, 16, 24, 0.5);
+      }
+
+      .target {
+        color: var(--target) !important;
+        background: rgba(255, 209, 102, 0.16);
+        text-shadow: 0 0 8px rgba(255, 209, 102, 0.45);
+      }
+
+      .tk-keyword {
+        color: var(--tk-keyword);
+      }
+
+      .tk-string {
+        color: var(--tk-string);
+      }
+
+      .tk-number {
+        color: var(--tk-number);
+      }
+
+      .tk-comment {
+        color: var(--tk-comment);
+      }
+
+      .tk-function {
+        color: var(--tk-function);
+      }
+
+      .tk-punct {
+        color: var(--tk-punct);
+      }
+
+      .virus {
+        background: rgba(89, 255, 83, 0.2);
+        color: var(--virus);
+      }
+
+      .head {
+        background: rgba(205, 255, 97, 0.28);
+        color: var(--virus-head);
+      }
+
+      .dead {
+        color: var(--danger);
+      }
+
+      .glitch #editor {
+        animation: jitter 140ms steps(3);
+      }
+
+      @keyframes jitter {
+        0% { transform: translate(0, 0); filter: hue-rotate(0deg); }
+        25% { transform: translate(-3px, 1px); filter: hue-rotate(40deg); }
+        50% { transform: translate(3px, -1px); filter: hue-rotate(-40deg); }
+        100% { transform: translate(0, 0); filter: hue-rotate(0deg); }
+      }
+
+      @media (max-width: 900px) {
+        .workspace {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto 1fr;
+        }
+        .hud {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app" id="app">
+      <div class="titlebar">
+        <div class="lights">
+          <span class="light r"></span>
+          <span class="light y"></span>
+          <span class="light g"></span>
+        </div>
+        <span>code-virus.ts</span>
+      </div>
+      <div class="workspace">
+        <aside class="hud">
+          <h1>Code Virus</h1>
+          <div class="status">
+            <div class="item">
+              <div class="k">Score</div>
+              <div class="v" id="score">0</div>
+            </div>
+            <div class="item">
+              <div class="k">Target char</div>
+              <div class="v" id="targetChar">{</div>
+            </div>
+            <div class="item">
+              <div class="k">Corrupted</div>
+              <div class="v" id="eaten">0</div>
+            </div>
+            <div class="item">
+              <div class="k">Speed</div>
+              <div class="v" id="speed">1.0x</div>
+            </div>
+            <div class="item">
+              <div class="k">Audio</div>
+              <div class="v" id="audioStatus">OFF</div>
+            </div>
+          </div>
+          <div class="help">
+            Arrow keys / WASD to steer.<br />
+            Eat highlighted target characters.<br />
+            Avoid your own virus tail and editor bounds.<br />
+            Press M to toggle audio.
+          </div>
+          <div class="cta" id="message">
+            Press Space to deploy virus.
+          </div>
+        </aside>
+        <section class="editor-wrap" id="editorWrap">
+          <div class="editor-head">
+            <span>main</span>
+            <span>virus-engine.ts</span>
+            <span>UTF-8</span>
+          </div>
+          <pre id="editor"></pre>
+        </section>
+      </div>
+    </div>
+
+    <script id="game-script">
+      const editorEl = document.getElementById("editor");
+      const appEl = document.getElementById("app");
+      const scoreEl = document.getElementById("score");
+      const targetEl = document.getElementById("targetChar");
+      const eatenEl = document.getElementById("eaten");
+      const speedEl = document.getElementById("speed");
+      const audioStatusEl = document.getElementById("audioStatus");
+      const messageEl = document.getElementById("message");
+
+      const SOURCE_TEXT = document
+        .getElementById("game-script")
+        .textContent.replace(/^\s{6}/gm, "")
+        .trim();
+
+      const TARGET_SEQUENCE = ["{", "}", "(", ")", "[", "]", ";", "=", "<", ">"];
+      const MAX_TARGETS = 16;
+      const GRID_W = 72;
+      const GRID_H = 30;
+      const KEYWORDS = new Set([
+        "const", "let", "var", "function", "return", "if", "else", "for", "while",
+        "class", "new", "true", "false", "null", "undefined", "switch", "case",
+        "break", "continue", "try", "catch", "finally", "import", "from", "export"
+      ]);
+
+      let codeGrid = [];
+      let styleGrid = [];
+      let eaten = new Set();
+      let snake = [];
+      let direction = { x: 1, y: 0 };
+      let queuedDirection = direction;
+      let score = 0;
+      let eatenCount = 0;
+      let currentTargetIndex = 0;
+      let targetQuota = 7;
+      let eatenThisTarget = 0;
+      let activeTargets = new Set();
+      let growth = 0;
+      let speed = 1;
+      let interval = null;
+      let running = false;
+      let gameOver = false;
+      let won = false;
+      let audioEnabled = false;
+      let audioCtx = null;
+      let musicTimer = null;
+      let musicStep = 0;
+
+      function buildCodeGrid() {
+        const lines = SOURCE_TEXT.split("\n").slice(0, GRID_H);
+        codeGrid = Array.from({ length: GRID_H }, (_, y) => {
+          const base = (lines[y] || "").padEnd(GRID_W, " ").slice(0, GRID_W);
+          return base.split("");
+        });
+        styleGrid = Array.from({ length: GRID_H }, () =>
+          Array.from({ length: GRID_W }, () => "ch")
+        );
+        buildStyleGrid();
+      }
+
+      function paintRange(styles, start, end, cls) {
+        for (let i = start; i < end && i < styles.length; i += 1) styles[i] = cls;
+      }
+
+      function buildStyleGrid() {
+        for (let y = 0; y < GRID_H; y += 1) {
+          const line = codeGrid[y].join("");
+          const styles = styleGrid[y];
+          let i = 0;
+
+          while (i < GRID_W) {
+            const ch = line[i];
+            const next = i + 1 < GRID_W ? line[i + 1] : "";
+
+            if (ch === "/" && next === "/") {
+              paintRange(styles, i, GRID_W, "tk-comment");
+              break;
+            }
+
+            if (ch === "'" || ch === '"' || ch === "`") {
+              const q = ch;
+              let j = i + 1;
+              while (j < GRID_W) {
+                if (line[j] === "\\" && j + 1 < GRID_W) {
+                  j += 2;
+                  continue;
+                }
+                if (line[j] === q) {
+                  j += 1;
+                  break;
+                }
+                j += 1;
+              }
+              paintRange(styles, i, j, "tk-string");
+              i = j;
+              continue;
+            }
+
+            if (/[0-9]/.test(ch)) {
+              let j = i + 1;
+              while (j < GRID_W && /[0-9_.]/.test(line[j])) j += 1;
+              paintRange(styles, i, j, "tk-number");
+              i = j;
+              continue;
+            }
+
+            if (/[A-Za-z_$]/.test(ch)) {
+              let j = i + 1;
+              while (j < GRID_W && /[A-Za-z0-9_$]/.test(line[j])) j += 1;
+              const word = line.slice(i, j);
+              if (KEYWORDS.has(word)) {
+                paintRange(styles, i, j, "tk-keyword");
+              } else {
+                let k = j;
+                while (k < GRID_W && /\s/.test(line[k])) k += 1;
+                if (k < GRID_W && line[k] === "(") paintRange(styles, i, j, "tk-function");
+              }
+              i = j;
+              continue;
+            }
+
+            if ("{}[]();,.<>:+-*/=%!?&|".includes(ch)) styles[i] = "tk-punct";
+            i += 1;
+          }
+        }
+      }
+
+      function cellKey(x, y) {
+        return `${x},${y}`;
+      }
+
+      function inBounds(x, y) {
+        return x >= 0 && x < GRID_W && y >= 0 && y < GRID_H;
+      }
+
+      function shuffled(arr) {
+        const copy = arr.slice();
+        for (let i = copy.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      }
+
+      function collectTargetCandidates(char) {
+        const result = [];
+        for (let y = 0; y < GRID_H; y += 1) {
+          for (let x = 0; x < GRID_W; x += 1) {
+            const key = cellKey(x, y);
+            if (eaten.has(key)) continue;
+            if (codeGrid[y][x] === char) result.push(key);
+          }
+        }
+        return result;
+      }
+
+      function pickNextTarget() {
+        for (let i = 0; i < TARGET_SEQUENCE.length; i += 1) {
+          const idx = (currentTargetIndex + i) % TARGET_SEQUENCE.length;
+          const char = TARGET_SEQUENCE[idx];
+          const pool = collectTargetCandidates(char);
+          if (pool.length > 0) {
+            currentTargetIndex = idx;
+            activeTargets = new Set(shuffled(pool).slice(0, MAX_TARGETS));
+            eatenThisTarget = 0;
+            targetQuota = Math.min(10, 5 + Math.floor(score / 80));
+            targetEl.textContent = char;
+            return true;
+          }
+        }
+        won = true;
+        running = false;
+        gameOver = true;
+        messageEl.textContent = "System fully corrupted. Press Space to run again.";
+        return false;
+      }
+
+      function resetGame() {
+        if (interval) clearInterval(interval);
+        buildCodeGrid();
+        eaten = new Set();
+        snake = [
+          { x: Math.floor(GRID_W / 2) - 1, y: Math.floor(GRID_H / 2) },
+          { x: Math.floor(GRID_W / 2) - 2, y: Math.floor(GRID_H / 2) },
+          { x: Math.floor(GRID_W / 2) - 3, y: Math.floor(GRID_H / 2) }
+        ];
+        direction = { x: 1, y: 0 };
+        queuedDirection = direction;
+        score = 0;
+        eatenCount = 0;
+        currentTargetIndex = 0;
+        speed = 1;
+        growth = 0;
+        running = false;
+        gameOver = false;
+        won = false;
+        scoreEl.textContent = "0";
+        eatenEl.textContent = "0";
+        speedEl.textContent = "1.0x";
+        updateAudioStatus();
+        messageEl.textContent = "Press Space to deploy virus.";
+        pickNextTarget();
+        render();
+      }
+
+      function maybeRefreshTargets() {
+        if (activeTargets.size > 0) return;
+        pickNextTarget();
+      }
+
+      function updateLoopSpeed() {
+        const delay = Math.max(60, Math.floor(180 / speed));
+        if (interval) clearInterval(interval);
+        interval = setInterval(tick, delay);
+      }
+
+      function triggerGlitch() {
+        appEl.classList.remove("glitch");
+        void appEl.offsetWidth;
+        appEl.classList.add("glitch");
+        setTimeout(() => appEl.classList.remove("glitch"), 130);
+      }
+
+      function noteToHz(midi) {
+        return 440 * 2 ** ((midi - 69) / 12);
+      }
+
+      function ensureAudio() {
+        if (audioCtx) return;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      function updateAudioStatus() {
+        audioStatusEl.textContent = audioEnabled ? "ON" : "OFF";
+      }
+
+      function playTone({ freq, duration = 0.1, type = "square", gain = 0.04, when = 0 }) {
+        if (!audioEnabled || !audioCtx) return;
+        const t0 = audioCtx.currentTime + when;
+        const osc = audioCtx.createOscillator();
+        const amp = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        amp.gain.setValueAtTime(0.0001, t0);
+        amp.gain.exponentialRampToValueAtTime(gain, t0 + 0.01);
+        amp.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+        osc.connect(amp);
+        amp.connect(audioCtx.destination);
+        osc.start(t0);
+        osc.stop(t0 + duration + 0.02);
+      }
+
+      function playEatSfx() {
+        playTone({ freq: noteToHz(76), duration: 0.07, type: "triangle", gain: 0.025 });
+        playTone({ freq: noteToHz(83), duration: 0.09, type: "triangle", gain: 0.018, when: 0.03 });
+      }
+
+      function playCrashSfx() {
+        playTone({ freq: noteToHz(42), duration: 0.24, type: "sawtooth", gain: 0.03 });
+      }
+
+      function playStartSfx() {
+        playTone({ freq: noteToHz(64), duration: 0.06, type: "square", gain: 0.02 });
+        playTone({ freq: noteToHz(71), duration: 0.08, type: "square", gain: 0.02, when: 0.06 });
+      }
+
+      function stopMusic() {
+        if (!musicTimer) return;
+        clearInterval(musicTimer);
+        musicTimer = null;
+      }
+
+      function startMusic() {
+        if (!audioEnabled || !audioCtx || musicTimer) return;
+        const bass = [40, 40, 43, 45, 40, 40, 47, 45];
+        const lead = [64, 67, 71, 69, 67, 64, 62, 59];
+        musicStep = 0;
+        musicTimer = setInterval(() => {
+          const i = musicStep % bass.length;
+          playTone({ freq: noteToHz(bass[i]), duration: 0.22, type: "triangle", gain: 0.015 });
+          playTone({ freq: noteToHz(lead[i]), duration: 0.11, type: "square", gain: 0.011, when: 0.03 });
+          musicStep += 1;
+        }, 260);
+      }
+
+      async function toggleAudio() {
+        if (!audioEnabled) {
+          ensureAudio();
+          if (audioCtx.state === "suspended") await audioCtx.resume();
+          audioEnabled = true;
+          startMusic();
+          playStartSfx();
+        } else {
+          audioEnabled = false;
+          stopMusic();
+        }
+        updateAudioStatus();
+      }
+
+      function tick() {
+        if (!running || gameOver) return;
+        direction = queuedDirection;
+        const head = snake[0];
+        const next = { x: head.x + direction.x, y: head.y + direction.y };
+
+        if (!inBounds(next.x, next.y)) {
+          endGame(false);
+          return;
+        }
+
+        const nextKey = cellKey(next.x, next.y);
+        for (let i = 0; i < snake.length; i += 1) {
+          if (snake[i].x === next.x && snake[i].y === next.y) {
+            endGame(false);
+            return;
+          }
+        }
+
+        snake.unshift(next);
+
+        if (activeTargets.has(nextKey)) {
+          activeTargets.delete(nextKey);
+          eaten.add(nextKey);
+          eatenCount += 1;
+          eatenThisTarget += 1;
+          score += 12 + snake.length;
+          growth += 1;
+          speed = Math.min(2.75, 1 + eatenCount * 0.03);
+          triggerGlitch();
+          playEatSfx();
+
+          if (eatenThisTarget >= targetQuota) {
+            currentTargetIndex = (currentTargetIndex + 1) % TARGET_SEQUENCE.length;
+            pickNextTarget();
+          } else {
+            maybeRefreshTargets();
+          }
+        } else if (growth > 0) {
+          growth -= 1;
+        } else {
+          snake.pop();
+        }
+
+        scoreEl.textContent = String(score);
+        eatenEl.textContent = String(eatenCount);
+        speedEl.textContent = `${speed.toFixed(1)}x`;
+        messageEl.textContent = running
+          ? `Corrupt '${TARGET_SEQUENCE[currentTargetIndex]}' characters (${eatenThisTarget}/${targetQuota}).`
+          : messageEl.textContent;
+
+        updateLoopSpeed();
+        render();
+      }
+
+      function endGame(didWin) {
+        running = false;
+        gameOver = true;
+        if (interval) clearInterval(interval);
+        won = didWin;
+        if (!didWin) playCrashSfx();
+        messageEl.textContent = didWin
+          ? "System fully corrupted. Press Space to replay."
+          : "Virus crashed. Press Space to re-run.";
+        render();
+      }
+
+      function render() {
+        const snakeSet = new Set(snake.map((s) => cellKey(s.x, s.y)));
+        const headKey = cellKey(snake[0].x, snake[0].y);
+
+        const html = [];
+        for (let y = 0; y < GRID_H; y += 1) {
+          html.push(`<span class="line"><span class="ln">${String(y + 1).padStart(2, "0")}</span>`);
+          for (let x = 0; x < GRID_W; x += 1) {
+            const key = cellKey(x, y);
+            let ch = codeGrid[y][x];
+            let cls = `cell ${styleGrid[y][x]}`;
+
+            if (eaten.has(key)) {
+              ch = " ";
+              cls += " hole";
+            } else if (activeTargets.has(key)) {
+              cls += " target";
+            }
+
+            if (snakeSet.has(key)) cls += " virus";
+            if (key === headKey) cls += " head";
+            if (gameOver && !won && key === headKey) cls += " dead";
+            html.push(`<span class="${cls}">${cellContent(ch)}</span>`);
+          }
+          html.push("</span>");
+        }
+        editorEl.innerHTML = html.join("");
+      }
+
+      function cellContent(ch) {
+        if (ch === " ") return "&nbsp;";
+        if (ch === "<") return "&lt;";
+        if (ch === ">") return "&gt;";
+        if (ch === "&") return "&amp;";
+        return ch;
+      }
+
+      function startGame() {
+        if (gameOver) resetGame();
+        if (!audioEnabled) {
+          ensureAudio();
+          if (audioCtx.state === "suspended") audioCtx.resume();
+          audioEnabled = true;
+          startMusic();
+          updateAudioStatus();
+        }
+        running = true;
+        playStartSfx();
+        messageEl.textContent = `Corrupt '${TARGET_SEQUENCE[currentTargetIndex]}' characters (${eatenThisTarget}/${targetQuota}).`;
+        updateLoopSpeed();
+      }
+
+      function setDirection(x, y) {
+        if (direction.x === -x && direction.y === -y) return;
+        queuedDirection = { x, y };
+      }
+
+      document.addEventListener("keydown", (e) => {
+        const key = e.key.toLowerCase();
+        if (key === "arrowup" || key === "w") {
+          e.preventDefault();
+          setDirection(0, -1);
+        }
+        if (key === "arrowdown" || key === "s") {
+          e.preventDefault();
+          setDirection(0, 1);
+        }
+        if (key === "arrowleft" || key === "a") {
+          e.preventDefault();
+          setDirection(-1, 0);
+        }
+        if (key === "arrowright" || key === "d") {
+          e.preventDefault();
+          setDirection(1, 0);
+        }
+        if (key === " " || key === "enter") {
+          e.preventDefault();
+          if (!running) startGame();
+        }
+        if (key === "m") {
+          e.preventDefault();
+          toggleAudio();
+        }
+      });
+
+      resetGame();
+    </script>
+  </body>
+</html>
