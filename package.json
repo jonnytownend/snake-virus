@@ -1,0 +1,22 @@
+{
+  "name": "snake-code",
+  "version": "1.0.0",
+  "description": "Code Virus: a snake-inspired browser game where you corrupt source code in an IDE-style interface.",
+  "private": true,
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "src/main.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0"
+  }
+}
