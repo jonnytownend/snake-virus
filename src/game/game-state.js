@@ -33,6 +33,7 @@ export function createInitialState(width, height) {
     speed: 1,
     running: false,
     gameOver: false,
+    gameOverReason: null,
     won: false
   };
 }

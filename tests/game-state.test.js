@@ -11,6 +11,7 @@ describe("createInitialState", () => {
     expect(state.speed).toBe(1);
     expect(state.running).toBe(false);
     expect(state.gameOver).toBe(false);
+    expect(state.gameOverReason).toBe(null);
     expect(state.won).toBe(false);
 
     expect(state.direction).toEqual(START_DIRECTION);

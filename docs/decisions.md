@@ -1,5 +1,22 @@
 # Decisions Log
 
+## 2026-02-16
+
+### Decision: Add explicit join-in-progress UX for multiplayer startup
+- Context: Operators could trigger room join and see no visible state change while network/auth checks were in-flight.
+- Decision: Add intro modal busy state (disabled CTA + connecting copy), deduplicate parallel join attempts, and restore controls on completion/failure.
+- Consequence: Launch interactions now provide immediate feedback and avoid duplicate join race behavior from repeated key/button input.
+
+### Decision: Replace query reads inside Firestore transactions for room joins
+- Context: `tx.get(query)` in room allocation caused runtime failures (`Cannot read properties of undefined (reading 'path')`) in browser SDK transactions.
+- Decision: Perform room candidate query with `getDocs` outside the transaction, then run a transaction on the chosen room reference with capacity re-check + bounded retry.
+- Consequence: Multiplayer joins no longer crash on transaction lookup and remain safe under concurrent joins.
+
+### Decision: Add explicit Firebase bootstrap/config diagnostics
+- Context: Multiplayer join failures were still surfacing generic messages when SDK imports or config validation failed before Firestore returned a structured Firebase code.
+- Decision: Validate required Firebase config fields at startup, emit explicit coded errors for invalid config and SDK import failures, and map those codes to actionable UI guidance.
+- Consequence: Operators now get precise remediation steps (config shape, invalid API key, unauthorized domain, SDK/network blocking) instead of opaque connection failures.
+
 ## 2026-02-15
 
 ### Decision: Add direction input buffering (queue length 2)
@@ -111,3 +128,28 @@
 - Context: Amplified multi-layer glitch effects felt visually excessive during normal play.
 - Decision: Remove the strong glitch mode and return to the earlier short jitter-only animation.
 - Consequence: Corruption feedback remains readable without dominating the visual experience.
+
+### Decision: Use Firebase Firestore as multiplayer room/state backend
+- Context: Multiplayer required a managed realtime backend with rooming and minimal local infrastructure.
+- Decision: Implement a Firebase adapter that allocates players to capped rooms and syncs player state via Firestore snapshots.
+- Consequence: Multiplayer can run with a demo config immediately and be switched to a real Firebase project by replacing config values.
+
+### Decision: Gate first run on player name and room join
+- Context: Multiplayer sessions need stable identity for UI and room membership before gameplay starts.
+- Decision: Extend the intro overlay with operator name capture and defer game start until join succeeds.
+- Consequence: Every active player has a visible name/score identity and is placed into a valid room before movement begins.
+
+### Decision: Render remote snakes and enforce player-collision ejection
+- Context: Multiplayer needed direct interaction beyond score comparison.
+- Decision: Render remote snake bodies/heads on the shared board and treat local collision with remote snakes as terminal with room ejection.
+- Consequence: Runs include direct spatial competition; player-vs-player impacts have immediate stakes and clear feedback.
+
+### Decision: Isolate multiplayer logic into backend/session/helper modules
+- Context: Networking complexity should not leak into core game-loop and rendering rules.
+- Decision: Split networking into `firebase-backend.js`, `multiplayer-session.js`, and pure helper utilities in `room-logic.js`.
+- Consequence: Multiplayer behavior is testable in isolation, backend swaps are easier, and core gameplay remains maintainable.
+
+### Decision: Surface Firebase join failures with explicit diagnostics
+- Context: A single generic "failed to connect" message made real setup issues hard to debug.
+- Decision: Add error-code aware mapping for common Firebase failures (rules, missing Firestore DB, auth configuration, network/API).
+- Consequence: Operators get actionable setup feedback directly in the launch modal and can resolve integration issues faster.

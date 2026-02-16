@@ -11,6 +11,7 @@ Architecture and tradeoff decisions are recorded in `docs/decisions.md`.
 - `src/styles/main.css`: all presentation styles.
 - `src/main.js`: composition root that wires dependencies and bootstraps the app.
 - `scripts/generate-source-corpus.mjs`: builds runtime source corpus from repository files.
+- `src/network/`: multiplayer networking layer (Firebase adapter, session lifecycle, room helpers).
 
 ## Game Modules (`src/game`)
 - `constants.js`: gameplay/system constants and UI copy.
@@ -24,9 +25,15 @@ Architecture and tradeoff decisions are recorded in `docs/decisions.md`.
 - `input-controller.js`: keyboard mapping and event binding.
 - `game-engine.js`: core game loop, collision rules, scoring, stage transitions, growth, target rotation, and orchestration.
 
+## Network Modules (`src/network`)
+- `firebase-backend.js`: Firebase Firestore room allocation and player state persistence/subscription.
+- `multiplayer-session.js`: client-side room join/leave lifecycle, state publishing, and remote player derivation.
+- `room-logic.js`: pure helper logic for room selection and player normalization/filtering.
+
 ## Boundaries
 - `game-engine.js` owns game state and timing.
 - `renderer.js` receives state snapshots and draws; it does not own game rules.
 - `audio-engine.js` is event-driven by the engine; gameplay logic does not depend on Web Audio internals.
 - `input-controller.js` only emits intents (direction/start/toggle), keeping controls decoupled from rules.
 - Source selection is abstracted behind a provider so gameplay logic does not depend on filesystem APIs.
+- Networking concerns are isolated behind `MultiplayerSession` and `FirebaseBackend`, so game logic remains backend-agnostic.

@@ -7,7 +7,7 @@
 
 ## Launch Flow
 - A mission-style intro overlay is shown on first load.
-- Press `Space`/`Enter` or click the CTA button to dismiss and start.
+- Enter an operator name, then press `Space`/`Enter` or click the CTA button to dismiss and start.
 - The intro explicitly calls out that the rendered code is the real game source.
 
 ## Rendering Rules
@@ -47,6 +47,14 @@
 - Hazard density increases as more code is corrupted.
 - Touching a hazard cell ends the run immediately.
 - Re-entering a previously corrupted (eaten) cell also ends the run immediately.
+- Colliding with another player's snake ends your run and ejects you from that room.
+
+## Multiplayer Rules
+- Multiplayer uses Firebase-backed rooms with up to 5 simultaneous players.
+- Room assignment is automatic and transparent to players.
+- All connected players in a room are rendered in the same board session.
+- Local HUD includes a live player name/score list for the current room.
+- Join errors are surfaced with Firebase-specific diagnostics (rules/API/auth/network) in the intro modal.
 
 ## Audio
 - Audio is generated with Web Audio API oscillators (no external assets).
@@ -59,5 +67,6 @@
 - `src/styles/main.css` contains all styling.
 - `src/main.js` is the bootstrap/assembly entrypoint.
 - Gameplay is split into dedicated modules under `src/game/` (engine, renderer, audio, input, syntax, grid, constants, state).
+- Multiplayer networking is split into dedicated modules under `src/network/` (Firebase backend, session orchestration, room logic helpers).
 - Real source-code corpus generation is handled by `scripts/generate-source-corpus.mjs`.
 - Architecture/design decisions are logged in `docs/decisions.md`.

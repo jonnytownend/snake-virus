@@ -90,6 +90,38 @@ body {
   line-height: 1.5;
 }
 
+.intro-label {
+  display: block;
+  margin: 4px 0 6px;
+  color: #cbe6ff;
+  font-size: 12px;
+}
+
+.intro-input {
+  width: 100%;
+  border: 1px solid #3c607e;
+  border-radius: 9px;
+  background: #0f1b26;
+  color: #e8f4ff;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 9px 10px;
+  margin-bottom: 4px;
+}
+
+.intro-input:focus {
+  outline: none;
+  border-color: #7bb3da;
+  box-shadow: 0 0 0 2px rgba(123, 179, 218, 0.2);
+}
+
+.intro-error {
+  min-height: 16px;
+  margin: 0 0 10px;
+  color: #ff9aaa;
+  font-size: 12px;
+}
+
 .intro-modal ul {
   margin: 14px 0 18px;
   padding-left: 20px;
@@ -110,6 +142,11 @@ body {
 
 .intro-start:hover {
   border-color: #77abcf;
+}
+
+.intro-start:disabled {
+  opacity: 0.75;
+  cursor: wait;
 }
 
 .titlebar {
@@ -201,6 +238,36 @@ body {
   font-size: 12px;
   line-height: 1.45;
   color: #aec3d8;
+}
+
+.players-panel {
+  padding: 8px 10px;
+}
+
+.players-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.players-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: #c7dcee;
+}
+
+.players-list li.local-player {
+  color: #e8fff1;
+}
+
+.players-list .players-empty {
+  color: #8facc6;
 }
 
 .cta {
@@ -313,9 +380,19 @@ body {
   color: var(--virus);
 }
 
+.other-virus {
+  background: rgba(121, 167, 255, 0.2);
+  color: #8dc0ff;
+}
+
 .head {
   background: rgba(205, 255, 97, 0.28);
   color: var(--virus-head);
+}
+
+.other-head {
+  background: rgba(152, 206, 255, 0.34);
+  color: #d5eeff;
 }
 
 .dead {

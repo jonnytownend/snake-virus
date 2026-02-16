@@ -49,10 +49,17 @@
               <div class="v" id="audioStatus">OFF</div>
             </div>
           </div>
+          <div class="item players-panel">
+            <div class="k">Players</div>
+            <ul class="players-list" id="playersList">
+              <li class="players-empty">No players yet.</li>
+            </ul>
+          </div>
           <div class="help">
             Arrow keys / WASD to steer.<br />
             Eat highlighted target characters.<br />
             Avoid all red corruption characters.<br />
+            Avoid other player snakes.<br />
             Avoid your own virus tail and editor bounds.<br />
             Press M to toggle audio.
           </div>
@@ -74,6 +81,9 @@
       <div class="intro-modal">
         <p class="intro-tag">SNAKE VIRUS // CONTAINMENT BREACH</p>
         <h2>Unleash the Virus</h2>
+        <label class="intro-label" for="playerName">Operator Name</label>
+        <input class="intro-input" id="playerName" maxlength="20" autocomplete="nickname" />
+        <p class="intro-error" id="introError" aria-live="polite"></p>
         <p>
           You are deploying a self-propagating virus inside a live source file.
           Every character you consume mutates the running codebase in real time.

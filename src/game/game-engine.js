@@ -35,14 +35,32 @@ export class GameEngine {
     this.renderer = renderer;
     this.audio = audio;
     this.sourceProvider = asSourceProvider(sourceProvider, sourceText);
+    this.onGameOver = null;
 
     this.currentSourceText = sourceText;
     this.currentSourcePath = "unknown.js";
     this.codeGrid = [];
     this.styleGrid = [];
     this.boardSize = { ...GRID };
+    this.remotePlayers = [];
     this.state = createInitialState(this.boardSize.width, this.boardSize.height);
     this.interval = null;
+  }
+
+  setOnGameOver(callback) {
+    this.onGameOver = callback;
+  }
+
+  setRemotePlayers(players) {
+    this.remotePlayers = (players || [])
+      .filter((player) => player && Array.isArray(player.snake))
+      .map((player) => ({
+        id: player.id,
+        name: player.name,
+        score: player.score,
+        snake: player.snake
+      }));
+    this.render();
   }
 
   reset() {
@@ -157,6 +175,7 @@ export class GameEngine {
       corruptedChars: this.state.corruptedChars,
       activeTargets: this.state.activeTargets,
       hazardCells: this.state.hazardCells,
+      remotePlayers: this.remotePlayers,
       snake: this.state.snake,
       gameOver: this.state.gameOver,
       won: this.state.won
@@ -182,6 +201,11 @@ export class GameEngine {
 
     if (this.collidesWithSnake(next.x, next.y)) {
       this.endGame(false);
+      return;
+    }
+
+    if (this.collidesWithRemoteSnake(next.x, next.y)) {
+      this.endGame(false, false, false, true);
       return;
     }
 
@@ -224,6 +248,16 @@ export class GameEngine {
     for (let i = 0; i < this.state.snake.length; i += 1) {
       const segment = this.state.snake[i];
       if (segment.x === x && segment.y === y) return true;
+    }
+    return false;
+  }
+
+  collidesWithRemoteSnake(x, y) {
+    for (const player of this.remotePlayers) {
+      for (let i = 0; i < player.snake.length; i += 1) {
+        const segment = player.snake[i];
+        if (segment.x === x && segment.y === y) return true;
+      }
     }
     return false;
   }
@@ -399,10 +433,13 @@ export class GameEngine {
     }
   }
 
-  endGame(didWin, hitHazard = false, hitCorruption = false) {
+  endGame(didWin, hitHazard = false, hitCorruption = false, hitPlayer = false) {
     this.state.running = false;
     this.state.gameOver = true;
     this.state.won = didWin;
+    this.state.gameOverReason = didWin
+      ? "win"
+      : (hitPlayer ? "player" : (hitCorruption ? "corruption" : (hitHazard ? "hazard" : "crash")));
     this.stopLoop();
     this.audio.setPlaybackActive(false);
 
@@ -410,12 +447,17 @@ export class GameEngine {
 
     const message = didWin
       ? UI_TEXT.fullCorruption
-      : (hitCorruption
+      : (hitPlayer
+        ? UI_TEXT.playerCrash
+        : (hitCorruption
         ? UI_TEXT.corruptionCrash
-        : (hitHazard ? UI_TEXT.hazardCrash : UI_TEXT.crash));
+        : (hitHazard ? UI_TEXT.hazardCrash : UI_TEXT.crash)));
 
     this.renderer.setMessage(message);
     this.render();
+    if (typeof this.onGameOver === "function") {
+      this.onGameOver(this.state.gameOverReason);
+    }
   }
 
   currentTargetLabel() {

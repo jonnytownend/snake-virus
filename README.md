@@ -10,6 +10,8 @@ Instead of eating food on an empty board, you control a virus that corrupts char
 - Corruption-count-based stage progression (every 10 corruptions) that swaps to new source regions mid-run.
 - Corruption symbols persist across stage/file swaps, so each run becomes progressively denser and harder.
 - Intro mission overlay that explains mechanics and the meta source-code concept.
+- Firebase-backed real-time multiplayer with automatic rooming (up to 5 players per room).
+- Live player name/score panel and player-vs-player snake collisions.
 - Syntax-highlighted code rendering.
 - Visual glitch effects on corruption events.
 - Synthesized sound effects and background music via Web Audio API.
@@ -32,6 +34,10 @@ snake-code/
       renderer.js
       source-text.js
       syntax-highlighter.js
+    network/
+      firebase-backend.js
+      multiplayer-session.js
+      room-logic.js
   tests/
     game-engine.test.js
     game-state.test.js
@@ -67,6 +73,33 @@ Note: The app uses browser ES modules, so run through a local server (not `file:
 - `Space` or `Enter`: start / restart
 - `M`: toggle audio
 
+## Multiplayer Backend
+- Firebase is used as the multiplayer backend.
+- The repository currently ships with a demo Firebase config fallback in `src/network/firebase-backend.js`.
+- You can provide runtime config via either `window.__SNAKE_VIRUS_FIREBASE_CONFIG` or `window.SNAKE_VIRUS_FIREBASE_CONFIG` before `src/main.js` loads.
+- Example:
+```html
+<script>
+  window.__SNAKE_VIRUS_FIREBASE_CONFIG = {
+    apiKey: "...",
+    authDomain: "...",
+    projectId: "...",
+    storageBucket: "...",
+    messagingSenderId: "...",
+    appId: "..."
+  };
+</script>
+```
+- Ensure Firestore Database is created for the project.
+- Ensure Firestore rules allow the app to read/write.
+- If rules require authenticated users (`request.auth != null`), enable Anonymous sign-in in Firebase Auth.
+- If using Firebase Auth, ensure `localhost` is listed in Auth -> Settings -> Authorized domains.
+- Quick console checklist:
+  1. Firebase Auth -> Sign-in method -> enable `Anonymous`.
+  2. Firebase Auth -> Settings -> Authorized domains -> include `localhost`.
+  3. Firestore Database -> create database (Native mode).
+  4. Firestore Rules -> allow reads/writes for your intended auth model.
+
 ## Scripts
 - `npm run run`: serve app with Python on port `8000`
 - `npm test`: run Jest unit tests
@@ -79,6 +112,7 @@ Unit tests cover:
 - Syntax highlighting classification behavior.
 - Initial state creation.
 - Core game-engine behavior (start/reset/tick/collisions/scoring/terminal states).
+- Multiplayer session lifecycle and room-selection helper logic.
 
 Coverage reports are generated in:
 - Console summary (`text`)

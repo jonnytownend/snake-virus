@@ -347,6 +347,25 @@ describe("GameEngine", () => {
     expect(renderer.setMessage).toHaveBeenCalledWith(UI_TEXT.corruptionCrash);
   });
 
+  test("remote snake collision ends game and ejects the local player", () => {
+    const { engine, renderer } = createEngine();
+    engine.reset();
+
+    engine.state.running = true;
+    engine.state.direction = { x: 1, y: 0 };
+    engine.state.directionQueue = [];
+    engine.state.snake = [{ x: 2, y: 2 }];
+    engine.setRemotePlayers([
+      { id: "other-1", name: "Other", score: 10, snake: [{ x: 3, y: 2 }] }
+    ]);
+
+    engine.tick();
+
+    expect(engine.state.gameOver).toBe(true);
+    expect(engine.state.gameOverReason).toBe("player");
+    expect(renderer.setMessage).toHaveBeenCalledWith(UI_TEXT.playerCrash);
+  });
+
   test("refreshHazards creates avoid cells as progression increases", () => {
     const { engine } = createEngine();
     engine.reset();

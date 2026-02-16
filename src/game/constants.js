@@ -111,6 +111,7 @@ export const UI_TEXT = Object.freeze({
   fullCorruption: "System fully corrupted. Press Space to replay.",
   fullCorruptionReset: "System fully corrupted. Press Space to run again.",
   crash: "Virus crashed. Press Space to re-run.",
+  playerCrash: "Virus collided with another player. You were ejected from this room.",
   hazardCrash: "Virus hit protected code. Press Space to re-run.",
   corruptionCrash: "Virus consumed corrupted code. Press Space to re-run."
 });

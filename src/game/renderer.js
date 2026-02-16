@@ -64,6 +64,33 @@ export class Renderer {
     this.elements.message.textContent = message;
   }
 
+  updatePlayers(players, localPlayerId = null) {
+    const list = this.elements.playersList;
+    if (!list) return;
+
+    if (!players || players.length === 0) {
+      list.innerHTML = '<li class="players-empty">No players yet.</li>';
+      return;
+    }
+
+    const sorted = players
+      .slice()
+      .sort((a, b) => {
+        if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
+        return (a.name || "").localeCompare(b.name || "");
+      });
+
+    list.innerHTML = sorted
+      .map((player) => {
+        const safeName = this.escapeHtml(player.name || "anonymous");
+        const label = player.id === localPlayerId ? `${safeName} (you)` : safeName;
+        const className = player.id === localPlayerId ? "local-player" : "";
+        const score = Number(player.score) || 0;
+        return `<li class="${className}"><span>${label}</span><span>${score}</span></li>`;
+      })
+      .join("");
+  }
+
   triggerGlitch() {
     this.elements.app.classList.remove("glitch");
     void this.elements.app.offsetWidth;
@@ -78,11 +105,25 @@ export class Renderer {
     corruptedChars,
     activeTargets,
     hazardCells,
+    remotePlayers = [],
     snake,
     gameOver,
     won
   }) {
     const snakeSet = new Set(snake.map((segment) => cellKey(segment.x, segment.y)));
+    const remoteSnakeSet = new Set();
+    const remoteHeadSet = new Set();
+
+    for (const player of remotePlayers) {
+      if (!player || !Array.isArray(player.snake)) continue;
+      for (let i = 0; i < player.snake.length; i += 1) {
+        const segment = player.snake[i];
+        const key = cellKey(segment.x, segment.y);
+        remoteSnakeSet.add(key);
+        if (i === 0) remoteHeadSet.add(key);
+      }
+    }
+
     const headKey = snake[0] ? cellKey(snake[0].x, snake[0].y) : "";
 
     const html = [];
@@ -104,6 +145,8 @@ export class Renderer {
         }
 
         if (snakeSet.has(key)) className += " virus";
+        if (!snakeSet.has(key) && remoteSnakeSet.has(key)) className += " other-virus";
+        if (!snakeSet.has(key) && remoteHeadSet.has(key)) className += " other-head";
         if (key === headKey) className += " head";
         if (gameOver && !won && key === headKey) className += " dead";
 
@@ -114,5 +157,12 @@ export class Renderer {
     }
 
     this.elements.editor.innerHTML = html.join("");
+  }
+
+  escapeHtml(text) {
+    return text
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
   }
 }
